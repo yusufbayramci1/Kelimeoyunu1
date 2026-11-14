@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Oyun Odası V10 Ultimate</title>
+    <title>Oyun Odası - 3D Metaverse Stüdyo V14</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
@@ -15,9 +16,7 @@
             --primary: #00e5ff; --primary-dark: #008299; 
             --danger: #ff1744; --danger-dark: #b70024;
             --success: #00e676; --success-dark: #00964b;
-            --mil-bg: radial-gradient(circle at center, #0f173b 0%, #030514 100%);
-            --mil-gold: #e5b85c; --mil-gold-glow: rgba(229, 184, 92, 0.4);
-            --word-bg: linear-gradient(135deg, #1e293b, #0f172a);
+            --mil-gold: #f3c65d; --mil-gold-glow: rgba(243, 198, 93, 0.7);
             --text: #ffffff;
         }
 
@@ -26,258 +25,431 @@
             margin: 0; padding: 0; display: flex; flex-direction: column; 
             align-items: center; height: 100vh; overflow: hidden; 
         }
-        
-        .panic-mode { box-shadow: inset 0 0 50px rgba(255, 23, 68, 0.3); }
+
+        #canvas3D {
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none;
+        }
+
+        .ui-layer {
+            position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; pointer-events: none;
+        }
+
+        .ui-layer * { pointer-events: auto; }
 
         /* ÜST DURUM ÇUBUĞU */
         .status-bar {
-            width: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;
-            align-items: center; padding: 10px 20px; box-sizing: border-box; z-index: 100;
+            width: 100%; max-width: 520px; background: rgba(10, 14, 28, 0.85); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(243,198,93,0.25); display: flex; justify-content: space-between;
+            align-items: center; padding: 8px 16px; box-sizing: border-box; z-index: 100; border-radius: 0 0 14px 14px;
         }
-        .ping-indicator { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .ping-dot { width: 10px; height: 10px; border-radius: 50%; background: gray; transition: 0.3s; }
+        .ping-indicator { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 6px; color: #94a3b8; }
+        .ping-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
         
-        .voice-controls { display: flex; align-items: center; gap: 15px; }
-        .voice-visualizer { display: flex; align-items: center; gap: 3px; height: 20px; opacity: 0.3; }
+        .voice-controls { display: flex; align-items: center; gap: 12px; }
+        .voice-visualizer { display: flex; align-items: center; gap: 3px; height: 16px; opacity: 0.3; }
         .voice-visualizer.active { opacity: 1; }
-        .bar { width: 4px; background: var(--success); border-radius: 2px; height: 4px; transition: height 0.1s ease; }
-        .mic-btn { background: rgba(255,255,255,0.1); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: 0.3s; }
-        .mic-btn.muted { background: var(--danger); }
+        .bar { width: 3px; background: var(--success); border-radius: 2px; height: 4px; transition: height 0.1s ease; }
+        .mic-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; width: 34px; height: 34px; border-radius: 50%; font-size: 15px; cursor: pointer; transition: 0.3s; }
+        .mic-btn.muted { background: var(--danger); border-color: var(--danger); }
 
         /* EKRANLAR */
-        .screen { width: 100%; height: 100%; max-width: 500px; padding: 20px; box-sizing: border-box; display: none; flex-direction: column; overflow-y: auto; position: relative; }
-        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        @keyframes dropBounce { 0% { transform: translateY(-40px) scale(0.8); opacity: 0; } 60% { transform: translateY(10px) scale(1.1); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
-        .drop-bounce { animation: dropBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        @keyframes pendingBlink { 0%, 100% { background: rgba(229, 184, 92, 0.2); } 50% { background: var(--mil-gold); color: #000; box-shadow: 0 0 20px var(--mil-gold-glow); } }
+        .screen { width: 100%; height: 100%; max-width: 520px; padding: 15px; box-sizing: border-box; display: none; flex-direction: column; overflow-y: auto; position: relative; }
+        .fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 
-        .loader { border: 4px solid rgba(0, 229, 255, 0.2); border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 25px 0; }
+        .loader { border: 4px solid rgba(243, 198, 93, 0.2); border-top: 4px solid var(--mil-gold); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.95); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
-        .code-box { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 10px 25px; border-radius: 12px; margin-top: 10px; font-size: 26px; font-weight: 900; letter-spacing: 5px; color: var(--success); text-align: center; }
+        .overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(5,2,12,0.92); backdrop-filter: blur(10px); z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
+        .code-box { background: rgba(0,0,0,0.8); border: 2px solid var(--mil-gold); padding: 10px 20px; border-radius: 14px; margin-top: 10px; font-size: 24px; font-weight: 900; letter-spacing: 4px; color: var(--mil-gold); text-align: center; box-shadow: 0 0 20px var(--mil-gold-glow); }
 
-        /* LOBİ */
-        #hubBoard { background: var(--word-bg); justify-content: center; align-items: center; text-align: center; }
-        .app-title { font-size: 34px; font-weight: 900; background: -webkit-linear-gradient(var(--primary), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; letter-spacing: 2px; }
+        /* ANA LOBİ (3D CAM EFEKTLİ KARTLAR) */
+        #hubBoard { justify-content: center; align-items: center; text-align: center; }
+        .app-title { font-size: 32px; font-weight: 900; background: -webkit-linear-gradient(#fff, var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; letter-spacing: 2px; text-shadow: 0 0 30px rgba(0,229,255,0.4); }
         
-        .btn-modern { width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; margin-bottom: 12px; }
-        .btn-primary { background: linear-gradient(45deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); }
-        .btn-danger { background: linear-gradient(45deg, var(--danger-dark), var(--danger)); color: white; box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3); }
-        .btn-action { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
-        .btn-modern:active:not(:disabled) { transform: scale(0.95); }
-        .btn-modern:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; background: gray; }
+        .btn-modern { width: 100%; padding: 15px; border-radius: 14px; border: none; font-size: 14px; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; margin-bottom: 10px; }
+        .btn-primary { background: linear-gradient(135deg, #008299, #00e5ff); color: #000; box-shadow: 0 4px 20px rgba(0, 229, 255, 0.4); }
+        .btn-danger { background: linear-gradient(135deg, #b70024, #ff1744); color: white; box-shadow: 0 4px 20px rgba(255, 23, 68, 0.4); }
+        .btn-action { background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(10px); }
+        .btn-modern:active:not(:disabled) { transform: scale(0.96); }
 
-        .name-input { width: 90%; padding: 15px; font-size: 18px; text-align: center; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; font-family: 'Montserrat'; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; outline: none; margin-bottom: 15px; transition: 0.3s; }
-        .name-input:focus { border-color: var(--primary); box-shadow: 0 0 20px rgba(0,229,255,0.4); }
+        .name-input { width: 90%; padding: 14px; font-size: 17px; text-align: center; border-radius: 14px; border: 2px solid rgba(0,229,255,0.3); background: rgba(0,0,0,0.6); color: white; font-family: 'Montserrat'; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; outline: none; margin-bottom: 15px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); }
+        .name-input:focus { border-color: var(--primary); box-shadow: 0 0 25px rgba(0,229,255,0.6); }
 
-        .game-mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; width: 100%; }
-        .mode-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 5px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; justify-content: center; }
-        .mode-card:hover { background: rgba(255,255,255,0.15); transform: translateY(-3px); }
-        .mode-title { font-size: 12px; font-weight: 900; color: var(--primary); margin-bottom: 3px; display: block; }
-        .mode-desc { font-size: 10px; color: #94a3b8; font-weight: 600; }
+        .game-mode-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; width: 100%; }
+        .mode-card { background: rgba(10, 14, 28, 0.75); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 12px 6px; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; justify-content: center; backdrop-filter: blur(10px); }
+        .mode-card:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.3); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        .mode-title { font-size: 11px; font-weight: 900; color: var(--primary); margin-bottom: 3px; display: block; }
+        .mode-desc { font-size: 9px; color: #94a3b8; font-weight: 600; }
 
-        .player-stats { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 800; background: rgba(0,0,0,0.4); padding: 12px 15px; border-radius: 12px; }
-        .lives { color: var(--danger); font-size: 16px; letter-spacing: 2px; filter: drop-shadow(0 0 5px rgba(255,65,108,0.5)); display: block; margin-top: 5px; }
+        .player-stats { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; font-weight: 800; background: rgba(10, 14, 28, 0.85); border: 1px solid rgba(255,255,255,0.08); padding: 8px 14px; border-radius: 12px; backdrop-filter: blur(10px); }
+        .lives { color: var(--danger); font-size: 15px; letter-spacing: 2px; }
         
-        .joker-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
-        .joker-pill { background: rgba(0,0,0,0.5); border: 1px solid var(--mil-gold); color: var(--mil-gold); padding: 8px 12px; border-radius: 20px; font-weight: 800; font-size: 11px; cursor: pointer; transition: 0.3s; text-align: center; }
-        .joker-pill:hover:not(.used) { background: var(--mil-gold); color: black; transform: translateY(-3px); }
-        .joker-pill.used { opacity: 0.3; text-decoration: line-through; pointer-events: none; border-color: gray; color: gray; }
-        .game-info-text { font-size: 14px; font-weight: 800; color: #94a3b8; text-align: center; margin-bottom: 10px; }
+        .joker-container { display: flex; justify-content: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .joker-pill { background: rgba(10, 14, 28, 0.9); border: 1.5px solid var(--mil-gold); color: var(--mil-gold); padding: 6px 14px; border-radius: 18px; font-weight: 800; font-size: 11px; cursor: pointer; transition: 0.3s; text-align: center; box-shadow: 0 0 8px rgba(243,198,93,0.2); backdrop-filter: blur(8px); }
+        .joker-pill:hover:not(.used) { background: var(--mil-gold); color: #000; box-shadow: 0 0 15px var(--mil-gold-glow); transform: translateY(-2px); }
+        .joker-pill.used { opacity: 0.25; text-decoration: line-through; pointer-events: none; border-color: #444; color: #444; }
+        .game-info-text { font-size: 12px; font-weight: 800; color: #94a3b8; text-align: center; margin-bottom: 5px; }
 
         /* KELİME OYUNU */
-        #wordGameBoard { background: var(--word-bg); }
-        .tile-board { display: flex; justify-content: center; gap: 8px; margin: 15px 0; min-height: 50px; flex-wrap: wrap; perspective: 1000px; }
-        .letter-tile { background: #f8fafc; color: #0f172a; font-size: 26px; font-weight: 900; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 10px; box-shadow: 0 6px 0 #cbd5e1, 0 10px 10px rgba(0,0,0,0.3); text-transform: uppercase; opacity: 0; }
-        .word-timer { font-size: 50px; font-weight: 900; text-align: center; color: var(--danger); text-shadow: 0 0 20px rgba(255,23,68,0.5); margin: 5px 0; }
-        .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--danger) !important; background: rgba(255, 65, 108, 0.1); }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .tile-board { display: flex; justify-content: center; gap: 6px; margin: 12px 0; min-height: 45px; flex-wrap: wrap; }
+        .letter-tile { background: #f8fafc; color: #0f172a; font-size: 24px; font-weight: 900; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; box-shadow: 0 5px 0 #cbd5e1, 0 8px 12px rgba(0,0,0,0.4); text-transform: uppercase; }
+        .word-timer { font-size: 45px; font-weight: 900; text-align: center; color: var(--danger); text-shadow: 0 0 15px rgba(255,23,68,0.6); margin: 2px 0; }
 
-        /* MİLYONER OYUNU */
-        #milyonerBoard { background: var(--mil-bg); }
-        .mil-header { text-align: center; margin-bottom: 10px; }
-        .mil-prize { font-size: 32px; color: var(--mil-gold); font-weight: 900; text-shadow: 0 0 20px var(--mil-gold-glow); margin: 5px 0; }
-        .mil-question-box { background: rgba(0, 0, 0, 0.7); border: 2px solid var(--mil-gold); border-radius: 16px; padding: 15px; text-align: center; font-size: 15px; font-weight: 700; color: white; margin-bottom: 15px; box-shadow: inset 0 0 20px rgba(229, 184, 92, 0.2); position: relative; }
-        .mil-options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
-        .mil-option-btn { background: rgba(0, 0, 0, 0.7); border: 2px solid var(--mil-gold); border-radius: 25px; padding: 12px 18px; text-align: left; font-size: 13px; font-weight: 700; color: white; cursor: pointer; transition: 0.3s; display: flex; align-items: center; }
-        .mil-option-btn span.letter { color: var(--mil-gold); margin-right: 12px; font-size: 16px; font-weight: 900; }
+        /* MİLYONER STÜDYO EKRANI */
+        .mil-layout { display: flex; gap: 10px; width: 100%; flex: 1; align-items: stretch; min-height: 0; }
+        .mil-main-col { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        .mil-ladder-col {
+            width: 130px; background: rgba(6, 3, 20, 0.9); border: 2px solid rgba(243, 198, 93, 0.4);
+            border-radius: 12px; padding: 6px 4px; display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: inset 0 0 20px rgba(243, 198, 93, 0.25), 0 0 25px rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+        }
+        .ladder-step {
+            display: flex; justify-content: space-between; padding: 2px 6px; font-size: 10px; font-weight: 700;
+            color: #7b8cae; border-radius: 4px; transition: 0.2s;
+        }
+        .ladder-step span.num { color: var(--mil-gold); font-weight: 900; }
+        .ladder-step.active {
+            background: linear-gradient(90deg, #d35400, #f39c12, #f1c40f); color: #000; font-weight: 900;
+            box-shadow: 0 0 15px var(--mil-gold-glow); transform: scale(1.05);
+        }
+        .ladder-step.safe { color: #fff; text-shadow: 0 0 8px #fff; font-weight: 800; }
+
+        .mil-studio-logo {
+            width: 52px; height: 52px; margin: 0 auto 3px auto; border-radius: 50%;
+            background: radial-gradient(circle, #4a1f94 0%, #05020c 100%);
+            border: 2px solid var(--mil-gold); display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 25px var(--mil-gold-glow); position: relative;
+        }
+
+        .mil-question-box {
+            background: linear-gradient(135deg, rgba(22, 36, 105, 0.9), rgba(7, 12, 40, 0.95));
+            border: 2px solid var(--mil-gold); border-radius: 30px; padding: 12px 16px;
+            text-align: center; font-size: 13px; font-weight: 700; color: white; margin-bottom: 10px;
+            box-shadow: inset 0 0 20px rgba(243, 198, 93, 0.4), 0 8px 20px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            clip-path: polygon(4% 0%, 96% 0%, 100% 50%, 96% 100%, 4% 100%, 0% 50%);
+        }
+
+        .mil-options-grid { display: grid; grid-template-columns: 1fr; gap: 6px; margin-bottom: 8px; }
+        .mil-option-btn {
+            background: linear-gradient(135deg, rgba(16, 26, 70, 0.85), rgba(5, 8, 30, 0.9));
+            border: 2px solid var(--mil-gold); border-radius: 25px; padding: 9px 14px;
+            text-align: left; font-size: 11px; font-weight: 700; color: white; cursor: pointer;
+            transition: 0.3s; display: flex; align-items: center; position: relative;
+            backdrop-filter: blur(10px);
+            clip-path: polygon(2% 0%, 98% 0%, 100% 50%, 98% 100%, 2% 100%, 0% 50%);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .mil-option-btn:hover:not(:disabled) { border-color: #fff; box-shadow: 0 0 15px var(--mil-gold-glow); transform: scale(1.01); }
+        .mil-option-btn span.letter { color: var(--mil-gold); margin-right: 10px; font-size: 13px; font-weight: 900; }
         .mil-option-btn.pending { animation: pendingBlink 0.3s infinite alternate; }
-        .mil-option-btn.correct { background: var(--success); border-color: white; color: black; box-shadow: 0 0 20px rgba(0,230,118,0.6); transform: scale(1.03); }
-        .mil-option-btn.wrong { background: var(--danger); border-color: white; box-shadow: 0 0 20px rgba(255,23,68,0.6); }
+        @keyframes pendingBlink { 0%, 100% { background: rgba(243, 198, 93, 0.3); } 50% { background: var(--mil-gold); color: #000; } }
+        .mil-option-btn.correct { background: var(--success); border-color: white; color: black; box-shadow: 0 0 20px rgba(0,230,118,0.9); }
+        .mil-option-btn.wrong { background: var(--danger); border-color: white; box-shadow: 0 0 20px rgba(255,23,68,0.9); }
 
-        /* BEKLEME LOBİSİ */
-        #customRoomLobby { background: var(--word-bg); justify-content: flex-start; align-items: center; }
-        .lobby-box { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); padding: 15px; border-radius: 12px; margin-bottom: 12px; width: 100%; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; }
+        /* LOBİ VE AYARLAR */
+        #customRoomLobby { justify-content: flex-start; align-items: center; }
+        .lobby-box { background: rgba(10, 14, 28, 0.85); border: 1px solid rgba(255,255,255,0.1); padding: 12px; border-radius: 12px; margin-bottom: 10px; width: 100%; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; backdrop-filter: blur(10px); }
+
+        .settings-btn { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: white; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; z-index: 100; backdrop-filter: blur(10px); }
+        .settings-btn:hover { background: rgba(255,255,255,0.2); transform: rotate(45deg); }
+        
+        .settings-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(3,5,15,0.92); backdrop-filter: blur(15px); z-index: 200; display: none; flex-direction: column; padding: 25px; box-sizing: border-box; }
+        .settings-group { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 15px; margin-bottom: 15px; }
+        .settings-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 13px; font-weight: 700; }
+        .settings-row:last-child { margin-bottom: 0; }
+        input[type="range"] { width: 120px; accent-color: var(--primary); cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="status-bar">
-        <div class="ping-indicator"><div class="ping-dot" id="pingDot"></div><span id="pingText">Bağlantı Yok</span></div>
-        <div class="voice-controls">
-            <div class="voice-visualizer" id="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
-            <button class="mic-btn" id="micBtn" onclick="toggleMute()">🎙️</button>
-        </div>
-    </div>
-    <audio id="remoteAudio" autoplay playsinline></audio>
+    <canvas id="canvas3D"></canvas>
+    <button class="settings-btn" onclick="toggleSettings(true)">⚙️</button>
 
-    <!-- ANA MENÜ -->
-    <div class="screen fade-in" id="hubBoard" style="display: flex;">
-        <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: #94a3b8; letter-spacing: 5px;">V10 ULTIMATE</span></div>
+    <!-- AYARLAR PANELİ -->
+    <div class="settings-modal" id="settingsModal">
+        <h2 style="color: var(--primary); font-weight: 900; margin-bottom: 20px; text-align: center; letter-spacing: 2px;">3D STÜDYO AYARLARI</h2>
         
-        <div id="loginSection" style="width: 100%;">
-            <input type="text" class="name-input" id="playerNameInput" placeholder="KENDİ İSMİNİ YAZ" autocomplete="off" maxlength="10">
-            <button class="btn-modern btn-primary" onclick="login()">SİSTEME GİRİŞ YAP 🚀</button>
+        <div class="settings-group">
+            <p style="color: var(--mil-gold); font-weight: 800; font-size: 12px; margin-bottom: 10px;">🎵 SES VE MÜZİK</p>
+            <div class="settings-row">
+                <span>Stüdyo Müzik (BGM)</span>
+                <input type="range" id="bgmVolume" min="0" max="1" step="0.1" value="0.3" oninput="updateVolume()">
+            </div>
+            <div class="settings-row">
+                <span>Efekt Sesleri (SFX)</span>
+                <input type="range" id="sfxVolume" min="0" max="1" step="0.1" value="0.5" oninput="updateVolume()">
+            </div>
         </div>
 
-        <div id="gameMenuSection" style="display: none; width: 100%;">
-            <p class="game-info-text" id="playerTag" style="color: var(--success); font-size: 15px; margin-bottom: 20px;"></p>
+        <div class="settings-group">
+            <p style="color: var(--mil-gold); font-weight: 800; font-size: 12px; margin-bottom: 10px;">✨ 3D GÖRSEL MOTOR</p>
+            <div class="settings-row">
+                <span>Dinamik 3D Sahne</span>
+                <input type="checkbox" id="render3DCheck" checked onchange="toggle3DScene(this)">
+            </div>
+        </div>
+
+        <button class="btn-modern btn-primary" onclick="toggleSettings(false)" style="margin-top: auto;">KAYDET VE ÇIK</button>
+    </div>
+
+    <div class="ui-layer">
+        <div class="status-bar">
+            <div class="ping-indicator"><div class="ping-dot" id="pingDot"></div><span id="pingText">Bağlantı Yok</span></div>
+            <div class="voice-controls">
+                <div class="voice-visualizer" id="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+                <button class="mic-btn" id="micBtn" onclick="toggleMute()">🎙️</button>
+            </div>
+        </div>
+        <audio id="remoteAudio" autoplay playsinline></audio>
+
+        <!-- ANA MENÜ -->
+        <div class="screen fade-in" id="hubBoard" style="display: flex;">
+            <div class="app-title">OYUN ODASI<br><span style="font-size: 11px; color: var(--mil-gold); letter-spacing: 4px;">3D METAVERSE V14</span></div>
             
-            <p style="font-weight: 800; font-size: 13px; margin-bottom: 8px; color: #94a3b8;">🔤 KELİME OYUNU</p>
-            <div class="game-mode-grid">
-                <div class="mode-card" onclick="openGame('word', 'single')"><span class="mode-title">TEK KİŞİ</span><span class="mode-desc">Bota Karşı</span></div>
-                <div class="mode-card" onclick="openRoomMenu('word')"><span class="mode-title">ÖZEL ODA</span><span class="mode-desc">Şifreli Lobi</span></div>
-                <div class="mode-card" style="border-color: rgba(0, 229, 255, 0.4);" onclick="openGame('word', 'random')"><span class="mode-title">HIZLI MAÇ</span><span class="mode-desc">Rastgele</span></div>
+            <div id="loginSection" style="width: 100%;">
+                <input type="text" class="name-input" id="playerNameInput" placeholder="KENDİ İSMİNİ YAZ" autocomplete="off" maxlength="10">
+                <button class="btn-modern btn-primary" onclick="login()">SİSTEME GİRİŞ YAP 🚀</button>
             </div>
 
-            <p style="font-weight: 800; font-size: 13px; margin-top: 8px; margin-bottom: 8px; color: #94a3b8;">💰 MİLYONER (ULTIMATE)</p>
-            <div class="game-mode-grid">
-                <div class="mode-card" style="border-color: rgba(229,184,92,0.3);" onclick="openGame('milyoner', 'single')"><span class="mode-title" style="color: var(--mil-gold);">TEK KİŞİ</span><span class="mode-desc">Bota Karşı</span></div>
-                <div class="mode-card" style="border-color: rgba(229,184,92,0.3);" onclick="openRoomMenu('milyoner')"><span class="mode-title" style="color: var(--mil-gold);">ÖZEL ODA</span><span class="mode-desc">Şifreli Lobi</span></div>
-                <div class="mode-card" style="border-color: rgba(229, 184, 92, 0.6);" onclick="openGame('milyoner', 'random')"><span class="mode-title" style="color: var(--mil-gold);">HIZLI MAÇ</span><span class="mode-desc">Rastgele</span></div>
+            <div id="gameMenuSection" style="display: none; width: 100%;">
+                <p class="game-info-text" id="playerTag" style="color: var(--success); font-size: 14px; margin-bottom: 15px;"></p>
+                
+                <p style="font-weight: 800; font-size: 12px; margin-bottom: 6px; color: #94a3b8;">🔤 KELİME OYUNU</p>
+                <div class="game-mode-grid">
+                    <div class="mode-card" onclick="openGame('word', 'single')"><span class="mode-title">TEK KİŞİ</span><span class="mode-desc">Bota Karşı</span></div>
+                    <div class="mode-card" onclick="openRoomMenu('word')"><span class="mode-title">ÖZEL ODA</span><span class="mode-desc">Şifreli Lobi</span></div>
+                    <div class="mode-card" style="border-color: rgba(0, 229, 255, 0.4);" onclick="openGame('word', 'random')"><span class="mode-title">HIZLI MAÇ</span><span class="mode-desc">Rastgele</span></div>
+                </div>
+
+                <p style="font-weight: 800; font-size: 12px; margin-top: 6px; margin-bottom: 6px; color: var(--mil-gold);">💰 KİM MİLYONER OLMAK İSTER</p>
+                <div class="game-mode-grid">
+                    <div class="mode-card" style="border-color: rgba(243,198,93,0.3);" onclick="openGame('milyoner', 'single')"><span class="mode-title" style="color: var(--mil-gold);">TEK KİŞİ</span><span class="mode-desc">Bota Karşı</span></div>
+                    <div class="mode-card" style="border-color: rgba(243,198,93,0.3);" onclick="openRoomMenu('milyoner')"><span class="mode-title" style="color: var(--mil-gold);">ÖZEL ODA</span><span class="mode-desc">Şifreli Lobi</span></div>
+                    <div class="mode-card" style="border-color: rgba(243, 198, 93, 0.6);" onclick="openGame('milyoner', 'random')"><span class="mode-title" style="color: var(--mil-gold);">HIZLI MAÇ</span><span class="mode-desc">Rastgele</span></div>
+                </div>
+            </div>
+
+            <div id="roomMenuSection" style="display: none; width: 100%;">
+                <p class="game-info-text" style="color: var(--mil-gold); font-size: 15px; margin-bottom: 12px; font-weight: 900;">ÖZEL ODA</p>
+                <div style="background: rgba(10,14,28,0.7); padding: 12px; border-radius: 12px; margin-bottom: 10px; backdrop-filter: blur(10px);">
+                    <p style="font-size: 12px; font-weight: 800; color: var(--success); margin-bottom: 6px;">➕ YENİ ODA KUR</p>
+                    <input type="text" class="name-input" id="createRoomPwd" placeholder="ODA ŞİFRESİ" style="padding: 10px; font-size: 13px; margin-bottom: 6px;">
+                    <button class="btn-modern btn-primary" onclick="createRoom()" style="padding: 10px; margin:0;">ODAYI OLUŞTUR</button>
+                </div>
+                <div style="background: rgba(10,14,28,0.7); padding: 12px; border-radius: 12px; margin-bottom: 10px; backdrop-filter: blur(10px);">
+                    <p style="font-size: 12px; font-weight: 800; color: var(--danger); margin-bottom: 6px;">🔑 ODAYA KATIL</p>
+                    <input type="text" class="name-input" id="joinRoomId" placeholder="5 HANELİ KOD" style="padding: 10px; font-size: 13px; margin-bottom: 6px;">
+                    <input type="password" class="name-input" id="joinRoomPwd" placeholder="ŞİFRE" style="padding: 10px; font-size: 13px; margin-bottom: 6px;">
+                    <button class="btn-modern btn-danger" onclick="joinRoom()" style="padding: 10px; margin:0;">ODAYA GİR</button>
+                </div>
+                <button class="btn-modern btn-action" onclick="document.getElementById('roomMenuSection').style.display='none'; document.getElementById('gameMenuSection').style.display='block';" style="padding: 10px;">⬅ GERİ</button>
             </div>
         </div>
 
-        <div id="roomMenuSection" style="display: none; width: 100%;">
-            <p class="game-info-text" style="color: var(--primary); font-size: 16px; margin-bottom: 15px; font-weight: 900;" id="roomMenuTitle">ÖZEL ODA</p>
-            <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 14px; margin-bottom: 12px;">
-                <p style="font-size: 13px; font-weight: 800; color: var(--success); margin-bottom: 8px;">➕ YENİ ODA KUR</p>
-                <input type="text" class="name-input" id="createRoomPwd" placeholder="ODA ŞİFRESİ" style="padding: 10px; font-size: 14px; margin-bottom: 8px;">
-                <button class="btn-modern btn-primary" onclick="createRoom()" style="padding: 12px; margin:0;">ODAYI OLUŞTUR</button>
+        <!-- BEKLEME LOBİSİ -->
+        <div class="screen" id="customRoomLobby">
+            <h2 class="app-title" style="font-size: 20px; margin-bottom: 5px;">BEKLEME LOBİSİ</h2>
+            <div class="code-box" id="lobbyRoomCode" style="font-size: 20px; padding: 6px;">-</div>
+            <p style="color: #94a3b8; font-weight: 600; font-size: 12px; margin-bottom: 12px;">ŞİFRE: <span id="lobbyRoomPwd" style="color: white;">-</span></p>
+
+            <button class="btn-modern btn-primary" id="roomVoiceBtn" onclick="initRoomVoiceChat()" style="background: linear-gradient(135deg, #6200ea, #b388ff); margin-bottom: 12px; font-size: 11px; padding: 10px; color: white;">📞 ODA SESLİ SOHBETİNE BAĞLAN</button>
+
+            <div class="lobby-box" style="border-color: var(--primary);">
+                <span id="lobbyHostName" style="color: var(--primary); font-weight: 900; font-size: 14px;">👑 Bekleniyor...</span>
+                <span id="lobbyHostStatus" class="lobby-ready-text" style="color: gray;">⏳ Bekleniyor</span>
             </div>
-            <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 14px; margin-bottom: 12px;">
-                <p style="font-size: 13px; font-weight: 800; color: var(--danger); margin-bottom: 8px;">🔑 ODAYA KATIL</p>
-                <input type="text" class="name-input" id="joinRoomId" placeholder="5 HANELİ KOD" style="padding: 10px; font-size: 14px; margin-bottom: 8px;">
-                <input type="password" class="name-input" id="joinRoomPwd" placeholder="ŞİFRE" style="padding: 10px; font-size: 14px; margin-bottom: 8px;">
-                <button class="btn-modern btn-danger" onclick="joinRoom()" style="padding: 12px; margin:0;">ODAYA GİR</button>
+            <div class="lobby-box" style="border-color: var(--danger);">
+                <span id="lobbyGuestName" style="color: var(--danger); font-weight: 900; font-size: 14px;">Bekleniyor...</span>
+                <span id="lobbyGuestStatus" class="lobby-ready-text" style="color: gray;">⏳ Bekleniyor</span>
             </div>
-            <button class="btn-modern btn-action" onclick="document.getElementById('roomMenuSection').style.display='none'; document.getElementById('gameMenuSection').style.display='block';" style="padding: 12px;">⬅ GERİ</button>
-        </div>
-    </div>
 
-    <!-- BEKLEME LOBİSİ -->
-    <div class="screen" id="customRoomLobby">
-        <h2 class="app-title" style="font-size: 22px; margin-bottom: 5px;">BEKLEME LOBİSİ</h2>
-        <div class="code-box" id="lobbyRoomCode" style="font-size: 20px; padding: 8px;">-</div>
-        <p style="color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 15px;">ŞİFRE: <span id="lobbyRoomPwd" style="color: white;">-</span></p>
-
-        <button class="btn-modern btn-primary" id="roomVoiceBtn" onclick="initRoomVoiceChat()" style="background: linear-gradient(45deg, #6200ea, #b388ff); margin-bottom: 15px; font-size: 12px; padding: 12px;">📞 ODA SESLİ SOHBETİNE BAĞLAN</button>
-
-        <div class="lobby-box" style="border-color: var(--primary);">
-            <span id="lobbyHostName" style="color: var(--primary); font-weight: 900; font-size: 15px;">👑 Bekleniyor...</span>
-            <span id="lobbyHostStatus" class="lobby-ready-text" style="color: gray;">⏳ Bekleniyor</span>
-        </div>
-        <div class="lobby-box" style="border-color: var(--danger);">
-            <span id="lobbyGuestName" style="color: var(--danger); font-weight: 900; font-size: 15px;">Bekleniyor...</span>
-            <span id="lobbyGuestStatus" class="lobby-ready-text" style="color: gray;">⏳ Bekleniyor</span>
+            <button class="btn-modern btn-action" id="lobbyReadyBtn" onclick="toggleReady()" style="margin-top: 8px; padding: 12px;">HAZIR OL ✔️</button>
+            <button class="btn-modern btn-primary" id="lobbyStartBtn" onclick="startCustomGame()" style="display: none; background: linear-gradient(135deg, #00c853, #b2ff59); color: black; padding: 12px;">OYUNU BAŞLAT 🚀</button>
+            <button class="btn-modern btn-danger" onclick="leaveGame()" style="margin-top: auto; padding: 12px;">ODADAN ÇIK 🚪</button>
         </div>
 
-        <button class="btn-modern btn-action" id="lobbyReadyBtn" onclick="toggleReady()" style="margin-top: 10px; padding: 14px;">HAZIR OL ✔️</button>
-        <button class="btn-modern btn-primary" id="lobbyStartBtn" onclick="startCustomGame()" style="display: none; background: linear-gradient(45deg, #00c853, #b2ff59); color: black; padding: 14px;">OYUNU BAŞLAT 🚀</button>
-        <button class="btn-modern btn-danger" onclick="leaveGame()" style="margin-top: auto; padding: 14px;">ODADAN ÇIK 🚪</button>
-    </div>
-
-    <!-- KELİME OYUNU -->
-    <div class="screen" id="wordGameBoard">
-        <div class="overlay" id="wordMatchOverlay">
-            <h2 style="color: var(--primary); font-weight: 900; letter-spacing: 2px;">🔍 RAKİP ARANIYOR</h2>
-            <div class="loader"></div>
-            <button class="btn-modern btn-danger" style="width: 200px;" onclick="cancelMatchmaking('word')">İPTAL ET</button>
-        </div>
-
-        <div class="player-stats">
-            <div><span id="wName1" style="color: var(--primary);">OYUNCU 1</span><span id="wLives1" class="lives">❤️❤️❤️</span></div>
-            <div style="text-align: right;"><span id="wName2" style="color: var(--danger);">OYUNCU 2</span><span id="wLives2" class="lives">❤️❤️❤️</span></div>
-        </div>
-        <div class="word-timer" id="wTimer">15</div>
-        <div class="tile-board" id="wCurrentWord"></div>
-        <input type="text" class="name-input" id="wInput" placeholder="KELİME YAZ..." style="margin-bottom: 8px; padding: 12px; font-size: 20px;">
-        <button class="btn-modern btn-primary" id="wSendBtn" onclick="sendWord()" style="padding: 14px; margin-bottom: 8px;">GÖNDER</button>
-        
-        <div class="joker-container">
-            <div class="joker-pill" onclick="useWordJoker('hint')">💡 İpucu</div>
-            <div class="joker-pill" onclick="useWordJoker('time')">⏳ +10 Sn</div>
-            <div class="joker-pill" onclick="useWordJoker('freeze')">❄️ Süreyi Dondur</div>
-        </div>
-        <p class="game-info-text" id="wStatus" style="color: var(--joker);"></p>
-        
-        <button class="btn-modern btn-primary" id="wVoiceBtn" onclick="initRoomVoiceChat()" style="background: linear-gradient(45deg, #6200ea, #b388ff); font-size: 12px; padding: 12px; display: none;">📞 SESLİ SOHBETE BAĞLAN</button>
-        <button class="btn-modern btn-danger" onclick="leaveGame()" style="padding: 12px; margin-top: auto;">⬅ ÇIKIŞ</button>
-    </div>
-
-    <!-- MİLYONER OYUNU (ULTIMATE V10) -->
-    <div class="screen" id="milyonerBoard">
-        <div class="overlay" id="milMatchOverlay">
-            <h2 style="color: var(--mil-gold); font-weight: 900; letter-spacing: 2px;">🔍 RAKİP ARANIYOR</h2>
-            <div class="loader" style="border-top-color: var(--mil-gold);"></div>
-            <button class="btn-modern btn-danger" style="width: 200px;" onclick="cancelMatchmaking('milyoner')">İPTAL ET</button>
-        </div>
-
-        <div class="player-stats" style="background: transparent; padding: 0;">
-            <div><span id="mName1" style="color: var(--primary);">OYUNCU 1</span></div>
-            <div style="text-align: right;"><span id="mName2" style="color: var(--danger);">OYUNCU 2</span></div>
-        </div>
-        
-        <div class="mil-header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <p class="game-info-text" id="mTurn" style="margin:0;">Sıra: Bekleniyor</p>
-                <button class="btn-modern btn-danger" onclick="milWithdraw()" style="width: auto; padding: 6px 12px; font-size: 11px; margin: 0;">🏁 ÇEKİLİYORUM</button>
+        <!-- KELİME OYUNU -->
+        <div class="screen" id="wordGameBoard">
+            <div class="overlay" id="wordMatchOverlay">
+                <h2 style="color: var(--primary); font-weight: 900; letter-spacing: 2px;">🔍 RAKİP ARANIYOR</h2>
+                <div class="loader"></div>
+                <button class="btn-modern btn-danger" style="width: 200px;" onclick="cancelMatchmaking('word')">İPTAL ET</button>
             </div>
-            <div class="mil-prize" id="mPrize">1.000 ₺</div>
-            <p class="game-info-text" id="mQuestionNum" style="margin: 0;">Soru: 1/12 (Baraj: 5. ve 10. Soru)</p>
+
+            <div class="player-stats">
+                <div><span id="wName1" style="color: var(--primary);">OYUNCU 1</span><span id="wLives1" class="lives">❤️❤️❤️</span></div>
+                <div style="text-align: right;"><span id="wName2" style="color: var(--danger);">OYUNCU 2</span><span id="wLives2" class="lives">❤️❤️❤️</span></div>
+            </div>
+            <div class="word-timer" id="wTimer">15</div>
+            <div class="tile-board" id="wCurrentWord"></div>
+            <input type="text" class="name-input" id="wInput" placeholder="KELİME YAZ..." style="margin-bottom: 6px; padding: 10px; font-size: 18px;">
+            <button class="btn-modern btn-primary" id="wSendBtn" onclick="sendWord()" style="padding: 12px; margin-bottom: 6px;">GÖNDER</button>
+            
+            <div class="joker-container">
+                <div class="joker-pill" onclick="useWordJoker('hint')">💡 İpucu</div>
+                <div class="joker-pill" onclick="useWordJoker('time')">⏳ +10 Sn</div>
+                <div class="joker-pill" onclick="useWordJoker('freeze')">❄️ Dondur</div>
+            </div>
+            <p class="game-info-text" id="wStatus" style="color: var(--joker);"></p>
+            
+            <button class="btn-modern btn-primary" id="wVoiceBtn" onclick="initRoomVoiceChat()" style="background: linear-gradient(135deg, #6200ea, #b388ff); font-size: 11px; padding: 10px; display: none; color: white;">📞 SESLİ SOHBET</button>
+            <button class="btn-modern btn-danger" onclick="leaveGame()" style="padding: 10px; margin-top: auto;">⬅ ÇIKIŞ</button>
         </div>
 
-        <div class="joker-container">
-            <div class="joker-pill" id="mJoker50" onclick="useMilJoker('fifty')">%50 Hak</div>
-            <div class="joker-pill" id="mJokerDouble" onclick="useMilJoker('double')" style="border-color: #00e5ff; color: #00e5ff;">✌️ Çift Cevap</div>
-            <div class="joker-pill" id="mJokerAudience" onclick="useMilJoker('audience')">👥 Seyirci Oyu</div>
-        </div>
+        <!-- MİLYONER STÜDYO EKRANI -->
+        <div class="screen" id="milyonerBoard">
+            <div class="overlay" id="milMatchOverlay">
+                <h2 style="color: var(--mil-gold); font-weight: 900; letter-spacing: 2px;">🔍 RAKİP ARANIYOR</h2>
+                <div class="loader" style="border-top-color: var(--mil-gold);"></div>
+                <button class="btn-modern btn-danger" style="width: 200px;" onclick="cancelMatchmaking('milyoner')">İPTAL ET</button>
+            </div>
 
-        <div class="mil-question-box" id="mQuestionText">Soru Yükleniyor...</div>
-        
-        <div class="mil-options-grid">
-            <button class="mil-option-btn" id="mOpt0" onclick="selectMilOption(0)"><span class="letter">A</span> <span class="text" id="mText0">-</span></button>
-            <button class="mil-option-btn" id="mOpt1" onclick="selectMilOption(1)"><span class="letter">B</span> <span class="text" id="mText1">-</span></button>
-            <button class="mil-option-btn" id="mOpt2" onclick="selectMilOption(2)"><span class="letter">C</span> <span class="text" id="mText2">-</span></button>
-            <button class="mil-option-btn" id="mOpt3" onclick="selectMilOption(3)"><span class="letter">D</span> <span class="text" id="mText3">-</span></button>
-        </div>
+            <div class="player-stats" style="background: transparent; padding: 0 0 4px 0;">
+                <div><span id="mName1" style="color: var(--primary);">OYUNCU 1</span></div>
+                <div style="text-align: right;"><span id="mName2" style="color: var(--danger);">OYUNCU 2</span></div>
+            </div>
 
-        <p class="game-info-text" id="mStatus" style="margin-top: 10px; font-size: 13px;"></p>
-        
-        <button class="btn-modern btn-primary" id="mVoiceBtn" onclick="initRoomVoiceChat()" style="background: linear-gradient(45deg, #6200ea, #b388ff); font-size: 12px; padding: 12px; display: none;">📞 SESLİ SOHBETE BAĞLAN</button>
-        <button class="btn-modern btn-danger" onclick="leaveGame()" style="padding: 12px; margin-top: auto;">⬅ ÇIKIŞ</button>
+            <div class="mil-layout">
+                <div class="mil-main-col">
+                    <div>
+                        <div class="mil-studio-logo"><span style="font-size: 18px;">🪙</span></div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span class="game-info-text" id="mTurn" style="margin:0; font-size: 11px; color: var(--mil-gold);">Sıra: Bekleniyor</span>
+                            <button class="btn-modern btn-danger" onclick="milWithdraw()" style="width: auto; padding: 3px 8px; font-size: 10px; margin: 0;">🏁 ÇEKİL</button>
+                        </div>
+                    </div>
+
+                    <div class="joker-container" style="margin-bottom: 6px;">
+                        <div class="joker-pill" id="mJoker50" onclick="useMilJoker('fifty')">%50 Hak</div>
+                        <div class="joker-pill" id="mJokerDouble" onclick="useMilJoker('double')" style="border-color: #00e5ff; color: #00e5ff;">✌️ Çift Cevap</div>
+                        <div class="joker-pill" id="mJokerAudience" onclick="useMilJoker('audience')">👥 Seyirci Oyu</div>
+                    </div>
+
+                    <div class="mil-question-box" id="mQuestionText">Soru Yükleniyor...</div>
+                    
+                    <div class="mil-options-grid">
+                        <button class="mil-option-btn" id="mOpt0" onclick="selectMilOption(0)"><span class="letter">A</span> <span class="text" id="mText0">-</span></button>
+                        <button class="mil-option-btn" id="mOpt1" onclick="selectMilOption(1)"><span class="letter">B</span> <span class="text" id="mText1">-</span></button>
+                        <button class="mil-option-btn" id="mOpt2" onclick="selectMilOption(2)"><span class="letter">C</span> <span class="text" id="mText2">-</span></button>
+                        <button class="mil-option-btn" id="mOpt3" onclick="selectMilOption(3)"><span class="letter">D</span> <span class="text" id="mText3">-</span></button>
+                    </div>
+                </div>
+
+                <div class="mil-ladder-col" id="prizeLadderUI"></div>
+            </div>
+
+            <p class="game-info-text" id="mStatus" style="margin: 4px 0 0 0; font-size: 10px;"></p>
+            
+            <div style="display: flex; gap: 6px; margin-top: 4px;">
+                <button class="btn-modern btn-primary" id="mVoiceBtn" onclick="initRoomVoiceChat()" style="background: linear-gradient(135deg, #6200ea, #b388ff); font-size: 10px; padding: 6px; display: none; margin:0; color: white;">📞 SESLİ SOHBET</button>
+                <button class="btn-modern btn-danger" onclick="leaveGame()" style="padding: 6px; margin: 0; font-size: 10px;">⬅ ÇIKIŞ</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // --- SES MOTORU ---
+        // --- 3D THREE.JS GERÇEKÇİ STÜDYO MOTORU ---
+        let scene, camera, renderer, studioLogo3D, spotlight3D;
+        let is3DActive = true;
+
+        function init3D() {
+            const canvas = document.getElementById('canvas3D');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 2, 10);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Stüdyo Işıklandırması
+            const ambientLight = new THREE.AmbientLight(0x221144, 2);
+            scene.add(ambientLight);
+
+            spotlight3D = new THREE.SpotLight(0xf3c65d, 5);
+            spotlight3D.position.set(0, 10, 5);
+            spotlight3D.angle = Math.PI / 4;
+            scene.add(spotlight3D);
+
+            const blueLight = new THREE.PointLight(0x00e5ff, 3, 20);
+            blueLight.position.set(-5, -2, 3);
+            scene.add(blueLight);
+
+            // 3D Milyoner Dönen Altın Çark / Logo
+            const geometry = new THREE.TorusGeometry(2.5, 0.25, 30, 100);
+            const material = new THREE.MeshStandardMaterial({ color: 0xf3c65d, roughness: 0.3, metalness: 0.9 });
+            studioLogo3D = new THREE.Mesh(geometry, material);
+            studioLogo3D.position.set(0, 0, -5);
+            scene.add(studioLogo3D);
+
+            // Stüdyo Zemin Izgarası
+            const grid = new THREE.GridHelper(30, 30, 0x00e5ff, 0x1b0a3c);
+            grid.position.set(0, -4, 0);
+            scene.add(grid);
+
+            window.addEventListener('resize', onWindowResize);
+            animate3D();
+        }
+
+        function animate3D() {
+            if (!is3DActive) return;
+            requestAnimationFrame(animate3D);
+
+            if (studioLogo3D) {
+                studioLogo3D.rotation.x += 0.005;
+                studioLogo3D.rotation.y += 0.01;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function toggle3DScene(el) {
+            is3DActive = el.checked;
+            document.getElementById('canvas3D').style.display = is3DActive ? 'block' : 'none';
+            if (is3DActive) animate3D();
+        }
+
+        window.onload = init3D;
+
+        // --- SES VE OYUN MOTORU ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let sfxVolume = 0.5; let bgmVolume = 0.3;
+
+        function toggleSettings(open) {
+            document.getElementById('settingsModal').style.display = open ? 'flex' : 'none';
+        }
+
+        function updateVolume() {
+            bgmVolume = parseFloat(document.getElementById('bgmVolume').value);
+            sfxVolume = parseFloat(document.getElementById('sfxVolume').value);
+        }
+
         function playTone(freq, type, duration, vol=0.1) {
             if(audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            gain.gain.setValueAtTime(vol * sfxVolume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
+
         const SFX = {
-            click: () => playTone(600, 'sine', 0.1, 0.05), tick: () => playTone(1200, 'triangle', 0.05, 0.02),
+            click: () => playTone(600, 'sine', 0.1, 0.05), 
+            tick: () => playTone(1200, 'triangle', 0.05, 0.03),
             correct: () => { playTone(523.25, 'sine', 0.1); setTimeout(() => playTone(659.25, 'sine', 0.2), 100); setTimeout(() => playTone(783.99, 'sine', 0.4), 200); },
-            wrong: () => { playTone(300, 'sawtooth', 0.3, 0.1); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.1), 200); },
-            suspense: () => { playTone(400, 'sine', 1.5, 0.03); playTone(405, 'sine', 1.5, 0.03); }
+            wrong: () => { playTone(300, 'sawtooth', 0.3, 0.12); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.12), 200); },
+            suspense: () => { playTone(400, 'sine', 1.5, 0.04); playTone(405, 'sine', 1.5, 0.04); }
         };
         document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.classList.contains('joker-pill')) SFX.click(); });
 
@@ -298,23 +470,27 @@
             'Z': ['ZAMAN', 'ZEKA', 'ZİNCİR', 'ZENGİN']
         };
 
-        // Genişletilmiş Dinamik Milyoner Soru Havuzu
-        const milPool = [
-            { q: "Hangisi Zonguldak'ın Karadeniz kıyısında yer alan meşhur ilçesidir?", opts: ["Alaplı", "Kozlu", "Ereğli", "Çaycuma"], ans: 2, p: "1.000 ₺" },
-            { q: "Ev yapımı çıtır tavuk hazırlarken, hamuru sarmak için genelde hangisi KULLANILMAZ?", opts: ["Un", "Yumurta", "Yufka", "Galeta Unu"], ans: 2, p: "2.000 ₺" },
-            { q: "Mobile Legends oyununda zırh kırma yeteneğiyle bilinen dövüşçü kimdir?", opts: ["Alucard", "Dyrroth", "Brody", "Chou"], ans: 1, p: "3.000 ₺" },
-            { q: "Arduino projelerinde sıcaklık/nem ölçmek için kullanılan mavi sensör nedir?", opts: ["HC-SR04", "LM35", "PIR", "DHT11"], ans: 3, p: "4.000 ₺" },
-            { q: "Dijital elektronikte hangisi temel mantık kapılarından biri DEĞİLDİR?", opts: ["NAND", "MAYBE", "NOR", "AND"], ans: 1, p: "5.000 ₺ (1. BARAJ)" },
-            { q: "Su, şeker, süt ve fıstıkla yoğrulan yöresel tatlının adı nedir?", opts: ["Kazandibi", "Cennet Çamuru", "Sütlaç", "Keşkül"], ans: 1, p: "7.500 ₺" },
-            { q: "2 Mart tarihinde doğan birinin burcu nedir?", opts: ["Kova", "Balık", "Koç", "Boğa"], ans: 1, p: "15.000 ₺" },
-            { q: "Dacia Dokker Lodgy aracın içeriden ayarlanan ayna sistemine ne ad verilir?", opts: ["Elektrikli", "Otomatik", "Mekanik", "Sensörlü"], ans: 2, p: "30.000 ₺" },
-            { q: "Türkiye'de ücret karşılığı yapılan 1 aylık askerlik hizmetine ne ad verilir?", opts: ["Dövizli", "Yoklama", "Bedelli", "Yedek Subay"], ans: 2, p: "60.000 ₺" },
-            { q: "Hangi dil mobil cihazlarda otomasyon scriptleri için sıkça kullanılır?", opts: ["HTML", "Python", "CSS", "SQL"], ans: 1, p: "125.000 ₺ (2. BARAJ)" },
-            { q: "Duino-Coin madenciliği için genellikle hangi platform sunucuları kullanılır?", opts: ["Instagram", "WhatsApp", "GitHub Actions", "Netflix"], ans: 2, p: "250.000 ₺" },
-            { q: "Elektrik panosunda devreyi aşırı akıma karşı koruyan sistem nedir?", opts: ["Röle", "Şalter (Kısa Devre)", "Kontaktör", "Kondansatör"], ans: 1, p: "1.000.000 ₺ (BÜYÜK ÖDÜL)" }
+        const milLadderPrizes = [
+            "1.000.000 TL", "250.000 TL", "125.000 TL", "60.000 TL", 
+            "30.000 TL", "15.000 TL", "7.500 TL", "5.000 TL", 
+            "3.000 TL", "2.000 TL", "1.000 TL", "500 TL"
         ];
 
-        // --- FIREBASE & GLOBAL DEĞİŞKENLER ---
+        const milPool = [
+            { q: "Hangisi Zonguldak'ın Karadeniz kıyısında yer alan meşhur ilçesidir?", opts: ["Alaplı", "Kozlu", "Ereğli", "Çaycuma"], ans: 2, p: "500 TL" },
+            { q: "Ev yapımı çıtır tavuk hazırlarken, hamuru sarmak için genelde hangisi KULLANILMAZ?", opts: ["Un", "Yumurta", "Yufka", "Galeta Unu"], ans: 2, p: "1.000 TL" },
+            { q: "Mobile Legends oyununda zırh kırma yeteneğiyle bilinen dövüşçü kimdir?", opts: ["Alucard", "Dyrroth", "Brody", "Chou"], ans: 1, p: "2.000 TL" },
+            { q: "Arduino projelerinde sıcaklık/nem ölçmek için kullanılan mavi sensör nedir?", opts: ["HC-SR04", "LM35", "PIR", "DHT11"], ans: 3, p: "3.000 TL" },
+            { q: "Dijital elektronikte hangisi temel mantık kapılarından biri DEĞİLDİR?", opts: ["NAND", "MAYBE", "NOR", "AND"], ans: 1, p: "5.000 TL (BARAJ)" },
+            { q: "Su, şeker, süt ve fıstıkla yoğrulan yöresel tatlının adı nedir?", opts: ["Kazandibi", "Cennet Çamuru", "Sütlaç", "Keşkül"], ans: 1, p: "7.500 TL" },
+            { q: "2 Mart tarihinde doğan birinin burcu nedir?", opts: ["Kova", "Balık", "Koç", "Boğa"], ans: 1, p: "15.000 TL" },
+            { q: "Dacia Dokker Lodgy aracın içeriden ayarlanan ayna sistemine ne ad verilir?", opts: ["Elektrikli", "Otomatik", "Mekanik", "Sensörlü"], ans: 2, p: "30.000 TL" },
+            { q: "Türkiye'de ücret karşılığı yapılan 1 aylık askerlik hizmetine ne ad verilir?", opts: ["Dövizli", "Yoklama", "Bedelli", "Yedek Subay"], ans: 2, p: "60.000 TL" },
+            { q: "Hangi dil mobil cihazlarda otomasyon scriptleri için sıkça kullanılır?", opts: ["HTML", "Python", "CSS", "SQL"], ans: 1, p: "125.000 TL (BARAJ)" },
+            { q: "Duino-Coin madenciliği için genellikle hangi platform sunucuları kullanılır?", opts: ["Instagram", "WhatsApp", "GitHub Actions", "Netflix"], ans: 2, p: "250.000 TL" },
+            { q: "Elektrik panosunda devreyi aşırı akıma karşı koruyan sistem nedir?", opts: ["Röle", "Şalter (Kısa Devre)", "Kontaktör", "Kondansatör"], ans: 1, p: "1.000.000 TL" }
+        ];
+
         const firebaseConfig = {
             apiKey: "AIzaSyCV8vsi4zIZbMQyBqyrbnu6liJkyTk_rcI",
             authDomain: "kelimeoyunu-9c9c2.firebaseapp.com",
@@ -346,7 +522,6 @@
             el.style.display = 'flex'; void el.offsetWidth; el.classList.add('fade-in');
         }
 
-        // --- OYUN BAŞLATMA & EŞLEŞTİRME ---
         function openGame(game, mode) {
             currentMode = mode; selectedGameType = game;
             let btnId = game === 'word' ? 'wVoiceBtn' : 'mVoiceBtn';
@@ -423,7 +598,6 @@
             leaveGame();
         }
 
-        // --- ÖZEL ODA SİSTEMİ ---
         function openRoomMenu(game) {
             selectedGameType = game; currentMode = 'pvp';
             document.getElementById('gameMenuSection').style.display = 'none';
@@ -521,7 +695,7 @@
 
         function leaveGame() {
             stopVoiceChat();
-            clearInterval(wInterval); document.body.classList.remove('panic-mode');
+            clearInterval(wInterval);
             if(currentGameRef) {
                 if(currentMode === 'pvp' && currentRoomData) {
                     if(myPlayer === currentRoomData.host) {
@@ -538,7 +712,6 @@
             document.getElementById('roomMenuSection').style.display = 'none';
         }
 
-        // --- İZOLE SESLİ SOHBET ---
         async function initRoomVoiceChat() {
             if(!activeRoomId) return;
             const btnList = ['roomVoiceBtn', 'wVoiceBtn', 'mVoiceBtn'];
@@ -549,7 +722,7 @@
                 analyzeAudio(localStream);
                 
                 const safeMyName = myPlayer.replace(/[^a-zA-Z0-9]/g, '');
-                peer = new Peer("v10-voice-" + activeRoomId + "-" + safeMyName);
+                peer = new Peer("v14-voice-" + activeRoomId + "-" + safeMyName);
 
                 peer.on('open', () => {
                     btnList.forEach(btnId => { let b = document.getElementById(btnId); if(b) { b.innerText = "🎤 Sesli Sohbet Aktif"; b.style.background = "var(--success-dark)"; } });
@@ -563,9 +736,9 @@
                     
                     if(opp && opp !== "Bekleniyor...") {
                         const safeOppName = opp.replace(/[^a-zA-Z0-9]/g, '');
-                        let call = peer.call("v10-voice-" + activeRoomId + "-" + safeOppName, localStream);
+                        let call = peer.call("v14-voice-" + activeRoomId + "-" + safeOppName, localStream);
                         if(call) call.on('stream', s => document.getElementById('remoteAudio').srcObject = s);
-                        let conn = peer.connect("v10-voice-" + activeRoomId + "-" + safeOppName);
+                        let conn = peer.connect("v14-voice-" + activeRoomId + "-" + safeOppName);
                         if(conn) conn.on('open', () => setupPing(conn));
                     }
                 });
@@ -582,7 +755,7 @@
             if(peer) { peer.destroy(); peer = null; }
             if(localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
             document.getElementById('remoteAudio').srcObject = null;
-            document.getElementById('pingText').innerText = "Bağlantı Yok"; document.getElementById('pingDot').style.background = "gray";
+            document.getElementById('pingText').innerText = "Bağlantı Yok"; document.getElementById('pingDot').style.background = "var(--success)";
         }
 
         function toggleMute() {
@@ -597,7 +770,7 @@
                 if(d.type === 'ping') conn.send({type: 'pong', time: d.time});
                 if(d.type === 'pong') {
                     let ms = Date.now() - d.time; document.getElementById('pingText').innerText = ms + " ms";
-                    document.getElementById('pingDot').style.background = ms < 70 ? 'var(--success)' : (ms < 150 ? 'var(--joker)' : 'var(--danger)');
+                    document.getElementById('pingDot').style.background = ms < 70 ? 'var(--success)' : (ms < 150 ? 'var(--mil-gold)' : 'var(--danger)');
                 }
             });
             setInterval(() => { if(conn.open) conn.send({type: 'ping', time: Date.now()}); }, 2000);
@@ -619,7 +792,6 @@
             } render();
         }
 
-        // --- KELİME OYUNU LOGIC ---
         let wState = {}; let wInterval;
         function initWordGame() {
             const gameRef = db.ref(`activeGames/word/${activeRoomId}`);
@@ -642,20 +814,20 @@
 
             const board = document.getElementById('wCurrentWord'); board.innerHTML = '';
             data.word.split('').forEach((letter, index) => {
-                let div = document.createElement('div'); div.className = 'letter-tile drop-bounce';
-                div.style.animationDelay = `${index * 0.1}s`; div.innerText = letter; board.appendChild(div);
+                let div = document.createElement('div'); div.className = 'letter-tile fade-in';
+                div.style.animationDelay = `${index * 0.08}s`; div.innerText = letter; board.appendChild(div);
             });
 
             document.getElementById('wTimer').innerText = data.timer;
             document.getElementById('wStatus').innerText = data.status;
 
             const input = document.getElementById('wInput'); const btn = document.getElementById('wSendBtn');
-            if(data.p1Lives <= 0 || data.p2Lives <= 0) { input.disabled = true; btn.disabled = true; clearInterval(wInterval); document.body.classList.remove('panic-mode'); return; }
+            if(data.p1Lives <= 0 || data.p2Lives <= 0) { input.disabled = true; btn.disabled = true; clearInterval(wInterval); return; }
 
             if(data.turn === myPlayer) {
                 input.disabled = false; btn.disabled = false; startWordTimer(data.timer);
             } else {
-                input.disabled = true; btn.disabled = true; input.value = ''; clearInterval(wInterval); document.body.classList.remove('panic-mode');
+                input.disabled = true; btn.disabled = true; input.value = ''; clearInterval(wInterval);
                 if(currentMode === 'single' && data.turn === 'SİSTEM') {
                     setTimeout(() => {
                         let expected = data.word.slice(-1); let opts = dict[expected] || ['ELMAS'];
@@ -708,8 +880,6 @@
             if(type === 'freeze') { SFX.correct(); alert("Süre 10 saniye donduruldu!"); }
         }
 
-
-        // --- MİLYONER ULTIMATE LOGIC (ÖDÜL AĞACI, BARAJ, ÇEKİL, ÇİFT CEVAP) ---
         let mState = {};
         function initMilyoner() {
             const gameRef = db.ref(`activeGames/milyoner/${activeRoomId}`);
@@ -727,9 +897,8 @@
             document.getElementById('mName1').innerText = data.p1;
             document.getElementById('mName2').innerText = data.p2;
             document.getElementById('mVoiceBtn').style.display = (currentMode === 'single') ? 'none' : 'block';
-            
-            document.getElementById('mPrize').innerText = q ? q.p : "1.000.000 ₺ KAZANDINIZ!";
-            document.getElementById('mQuestionNum').innerText = `Soru: ${data.qIdx + 1}/12 (Güvenli Baraj: 5 ve 10)`;
+
+            renderPrizeLadder(data.qIdx);
 
             document.getElementById('mJoker50').className = `joker-pill ${data.j.f ? '' : 'used'}`;
             document.getElementById('mJokerAudience').className = `joker-pill ${data.j.audience ? '' : 'used'}`;
@@ -766,6 +935,20 @@
             }
         }
 
+        function renderPrizeLadder(currentIdx) {
+            const ladderUI = document.getElementById('prizeLadderUI');
+            ladderUI.innerHTML = '';
+            milLadderPrizes.forEach((prizeStr, index) => {
+                let qNumber = 12 - index; 
+                let stepDiv = document.createElement('div');
+                stepDiv.className = 'ladder-step';
+                if(qNumber - 1 === currentIdx) stepDiv.classList.add('active');
+                if(qNumber === 5 || qNumber === 10) stepDiv.classList.add('safe');
+                stepDiv.innerHTML = `<span class="num">${qNumber}</span> <span>${prizeStr}</span>`;
+                ladderUI.appendChild(stepDiv);
+            });
+        }
+
         function selectMilOption(idx) {
             if(mState.turn !== myPlayer || mState.over || mState.selecting !== false) return;
             const q = mState.questions[mState.qIdx]; 
@@ -783,7 +966,6 @@
                         });
                     }, 2000);
                 } else {
-                    // ÇİFT CEVAP KONTROLÜ
                     if(mState.doubleChance) {
                         SFX.wrong();
                         document.getElementById('mOpt'+idx).className = "mil-option-btn wrong";
@@ -796,10 +978,9 @@
                     document.getElementById('mOpt'+q.ans).className = "mil-option-btn correct";
                     
                     setTimeout(() => { 
-                        // Baraj Hesaplama (5. soru ve 10. soru barajı)
                         let prizeMessage = "Elendiniz! (Barajsız)";
-                        if(mState.qIdx >= 9) prizeMessage = "125.000 ₺ Güvenli Baraj Ödülüyle Ayrıldınız!";
-                        else if(mState.qIdx >= 4) prizeMessage = "5.000 ₺ Güvenli Baraj Ödülüyle Ayrıldınız!";
+                        if(mState.qIdx >= 9) prizeMessage = "125.000 TL Güvenli Baraj Ödülüyle Ayrıldınız!";
+                        else if(mState.qIdx >= 4) prizeMessage = "5.000 TL Güvenli Baraj Ödülüyle Ayrıldınız!";
 
                         db.ref(`activeGames/milyoner/${activeRoomId}`).update({ over: true, status: `YANLIŞ! ${prizeMessage}`, selecting: false }); 
                     }, 2000);
@@ -810,7 +991,7 @@
         function milWithdraw() {
             if(mState.over || mState.selecting !== false) return;
             SFX.correct();
-            let currentPrize = mState.qIdx > 0 ? mState.questions[mState.qIdx - 1].p : "0 ₺";
+            let currentPrize = mState.qIdx > 0 ? mState.questions[mState.qIdx - 1].p : "0 TL";
             db.ref(`activeGames/milyoner/${activeRoomId}`).update({ over: true, status: `🏁 Çekildiniz! Kazanılan Ödül: ${currentPrize}` });
         }
 
@@ -829,7 +1010,7 @@
             }
             else if(type === 'audience' && mState.j.audience) { 
                 db.ref(`activeGames/milyoner/${activeRoomId}/j/audience`).set(false); 
-                db.ref(`activeGames/milyoner/${activeRoomId}/status`).set(`👥 Stüdyo Seyircisi Oylaması: %82 ihtimalle ${['A','B','C','D'][q.ans]} şıkkı!`); 
+                db.ref(`activeGames/milyoner/${activeRoomId}/status`).set(`👥 Seyirci Oylaması: %82 ihtimalle ${['A','B','C','D'][q.ans]} şıkkı!`); 
             }
         }
     </script>
