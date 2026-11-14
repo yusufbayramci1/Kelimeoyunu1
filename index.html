@@ -3,510 +3,765 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Oyun Odası Pro</title>
+    <title>Oyun Odası E-Spor Lobby</title>
     
-    <!-- Modern Font ve Kütüphaneler -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
     
     <style>
         :root { 
-            --primary: #00d2ff; --primary-dark: #3a7bd5; 
-            --danger: #ff416c; --danger-dark: #ff4b2b;
-            --success: #00b09b; --success-dark: #96c93d;
-            --joker: #fbd786; --joker-dark: #f7797d;
-            --mil-gold: #e6c27a; --mil-dark: #141e30;
+            --primary: #00e5ff; --primary-dark: #008299; 
+            --danger: #ff1744; --danger-dark: #b70024;
+            --success: #00e676; --success-dark: #00964b;
+            --mil-bg: radial-gradient(circle at center, #0f173b 0%, #030514 100%);
+            --mil-gold: #e5b85c; --mil-gold-glow: rgba(229, 184, 92, 0.4);
+            --word-bg: linear-gradient(135deg, #1e293b, #0f172a);
             --text: #ffffff;
         }
 
-        /* Hareketli Arka Plan Animasyonu */
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
         body { 
-            font-family: 'Poppins', sans-serif; 
-            background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #141e30);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            color: var(--text); margin: 0; padding: 15px; 
-            display: flex; flex-direction: column; align-items: center; 
-            min-height: 100vh; box-sizing: border-box; overscroll-behavior: none; 
+            font-family: 'Montserrat', sans-serif; background: #000; color: var(--text); 
+            margin: 0; padding: 0; display: flex; flex-direction: column; 
+            align-items: center; height: 100vh; overflow: hidden; 
+            transition: box-shadow 0.3s ease;
         }
-
-        h1 { font-size: 28px; margin-bottom: 5px; text-align: center; background: -webkit-linear-gradient(var(--primary), #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(0, 210, 255, 0.4); }
-        .subtitle { font-size: 13px; color: #b0bec5; margin-bottom: 20px; text-align: center; font-weight: 600; letter-spacing: 1px; }
         
-        /* Glassmorphism (Cam Efekti) Paneller */
-        .board { 
-            background: rgba(15, 23, 42, 0.6); 
-            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            width: 100%; max-width: 400px; padding: 25px 20px; 
-            border-radius: 20px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); 
-            text-align: center; margin-bottom: 15px; display: none; 
+        .panic-mode { box-shadow: inset 0 0 50px rgba(255, 23, 68, 0.3); }
+
+        /* --- ÜST DURUM ÇUBUĞU --- */
+        .status-bar {
+            width: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between;
+            align-items: center; padding: 10px 20px; box-sizing: border-box; z-index: 100;
         }
+        .ping-indicator { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .ping-dot { width: 10px; height: 10px; border-radius: 50%; background: gray; transition: 0.3s; }
+        
+        .voice-controls { display: flex; align-items: center; gap: 15px; }
+        .voice-visualizer { display: flex; align-items: center; gap: 3px; height: 20px; opacity: 0.3; }
+        .voice-visualizer.active { opacity: 1; }
+        .bar { width: 4px; background: var(--success); border-radius: 2px; height: 4px; transition: height 0.1s ease; }
+        .mic-btn { background: rgba(255,255,255,0.1); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; transition: 0.3s; }
+        .mic-btn.muted { background: var(--danger); }
 
-        /* Yumuşak Ekran Geçiş Animasyonu */
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.39, 0.57, 0.56, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        /* --- ORTAK EKRAN ALANLARI --- */
+        .screen { width: 100%; height: 100%; max-width: 500px; padding: 20px; box-sizing: border-box; display: none; flex-direction: column; overflow-y: auto; position: relative; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes dropBounce { 0% { transform: translateY(-40px) scale(0.8); opacity: 0; } 60% { transform: translateY(10px) scale(1.1); opacity: 1; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+        .drop-bounce { animation: dropBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes pendingBlink { 0%, 100% { background: rgba(229, 184, 92, 0.2); } 50% { background: var(--mil-gold); color: #000; box-shadow: 0 0 20px var(--mil-gold-glow); } }
+        @keyframes slideInRight { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .slide-in-1 { animation: slideInRight 0.4s forwards 0.1s; opacity: 0; }
+        .slide-in-2 { animation: slideInRight 0.4s forwards 0.2s; opacity: 0; }
+        .slide-in-3 { animation: slideInRight 0.4s forwards 0.3s; opacity: 0; }
+        .slide-in-4 { animation: slideInRight 0.4s forwards 0.4s; opacity: 0; }
 
-        /* Modern Buton Tasarımları */
-        button { 
-            width: 100%; padding: 16px; border-radius: 14px; border: none; 
-            background: linear-gradient(45deg, var(--primary-dark), var(--primary)); 
-            color: white; font-size: 16px; font-weight: 800; letter-spacing: 1px;
-            cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px; 
-            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); text-transform: uppercase;
-        }
-        button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5); }
-        button:active { transform: scale(0.95); }
-        button:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); box-shadow: none; transform: none; cursor: not-allowed; }
-        
-        .btn-yaren { background: linear-gradient(45deg, var(--danger-dark), var(--danger)); box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3); }
-        .btn-yaren:hover { box-shadow: 0 8px 20px rgba(255, 65, 108, 0.5); }
-        
-        .btn-menu { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); box-shadow: none; font-size: 14px; }
-        .btn-menu:hover { background: rgba(255,255,255,0.1); }
+        .loader { border: 4px solid rgba(0, 229, 255, 0.2); border-top: 4px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 25px 0; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .code-box { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); padding: 10px 25px; border-radius: 12px; margin-top: 10px; font-size: 26px; font-weight: 900; letter-spacing: 5px; color: var(--success); text-align: center; }
 
-        /* Sesli Sohbet Butonu Efekti */
-        #voiceBtn { background: linear-gradient(45deg, #8E2DE2, #4A00E0); box-shadow: 0 4px 15px rgba(138, 45, 226, 0.4); }
-        #voiceBtn.active { background: linear-gradient(45deg, var(--success-dark), var(--success)); animation: pulseVoice 2s infinite; }
-        @keyframes pulseVoice { 0% { box-shadow: 0 0 0 0 rgba(0, 176, 155, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 176, 155, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 176, 155, 0); } }
+        /* --- LOBİ --- */
+        #hubBoard { background: var(--word-bg); justify-content: center; align-items: center; text-align: center; }
+        .app-title { font-size: 34px; font-weight: 900; background: -webkit-linear-gradient(var(--primary), #fff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px; letter-spacing: 2px; }
+        
+        .btn-modern { width: 100%; padding: 16px; border-radius: 16px; border: none; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.3s; text-transform: uppercase; margin-bottom: 12px; }
+        .btn-primary { background: linear-gradient(45deg, var(--primary-dark), var(--primary)); color: white; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); }
+        .btn-danger { background: linear-gradient(45deg, var(--danger-dark), var(--danger)); color: white; box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3); }
+        .btn-action { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-modern:active:not(:disabled) { transform: scale(0.95); }
+        .btn-modern:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; background: gray; }
 
-        /* Kelime Oyunu Özelleştirmeleri */
-        .player-stats { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 15px; font-weight: 800; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 12px; }
-        .lives { color: var(--danger); font-size: 18px; letter-spacing: 2px; filter: drop-shadow(0 0 5px rgba(255,65,108,0.5)); }
-        
-        .word-display { font-size: 38px; font-weight: 900; letter-spacing: 3px; background: -webkit-linear-gradient(var(--success), #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 15px 0; min-height: 50px; text-shadow: 0 0 20px rgba(0, 176, 155, 0.4); }
-        .timer { font-size: 55px; font-weight: 900; background: -webkit-linear-gradient(var(--danger), #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0; filter: drop-shadow(0 0 10px rgba(255, 65, 108, 0.5)); }
-        
-        input { width: 85%; padding: 18px; font-size: 22px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.1); outline: none; text-align: center; text-transform: uppercase; font-weight: 800; background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; transition: all 0.3s; font-family: 'Poppins', sans-serif; letter-spacing: 2px; }
-        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 210, 255, 0.3); background: rgba(0, 210, 255, 0.05); }
-        
-        .jokers { display: flex; gap: 10px; justify-content: space-between; margin-top: 15px; }
-        .btn-joker { flex: 1; background: linear-gradient(45deg, var(--joker-dark), var(--joker)); color: #111; font-size: 13px; font-weight: 800; padding: 12px 5px; box-shadow: 0 4px 10px rgba(247, 121, 125, 0.3); border-radius: 10px; }
-        
-        .btn-objection { background: linear-gradient(45deg, #b20a2c, #fffbd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; border: 2px solid #b20a2c; display: none; background-color: rgba(178, 10, 44, 0.1); animation: pulseAlert 1.5s infinite; }
-        
-        /* Milyoner Oyunu Özelleştirmeleri */
-        .mil-board { background: linear-gradient(135deg, rgba(20,30,48,0.9), rgba(36,59,85,0.9)); border: 1px solid rgba(230, 194, 122, 0.3); box-shadow: 0 0 30px rgba(230, 194, 122, 0.1); }
-        .mil-prize { font-size: 32px; color: var(--mil-gold); font-weight: 900; margin: 15px 0; text-shadow: 0 0 15px rgba(230, 194, 122, 0.6); letter-spacing: 2px; }
-        .mil-question { background: rgba(0, 0, 0, 0.5); border: 2px solid var(--mil-gold); padding: 20px 15px; border-radius: 16px; font-size: 16px; font-weight: 600; min-height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 25px; box-shadow: inset 0 0 20px rgba(230, 194, 122, 0.1); line-height: 1.4; }
-        .mil-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .mil-option { background: rgba(0,0,0,0.6); border: 1px solid rgba(230, 194, 122, 0.5); border-radius: 12px; padding: 15px 10px 15px 40px; font-size: 14px; color: white; cursor: pointer; transition: all 0.3s; position: relative; text-align: left; font-weight: 600; text-transform: none; box-shadow: none; letter-spacing: 0; }
-        .mil-option::before { content: attr(data-letter) ": "; position: absolute; left: 15px; color: var(--mil-gold); font-weight: 900; }
-        .mil-option:hover:not(:disabled) { background: rgba(230, 194, 122, 0.2); border-color: var(--mil-gold); transform: translateY(-2px); }
-        .mil-option.correct { background: linear-gradient(45deg, var(--success-dark), var(--success)); border-color: white; color: white; box-shadow: 0 0 15px rgba(0, 176, 155, 0.5); }
-        .mil-option.wrong { background: linear-gradient(45deg, var(--danger-dark), var(--danger)); border-color: white; color: white; box-shadow: 0 0 15px rgba(255, 65, 108, 0.5); }
-        .mil-option.disabled { opacity: 0; pointer-events: none; }
-        .mil-jokers { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
-        .mil-joker-btn { width: 55px; height: 40px; border-radius: 12px; background: rgba(230, 194, 122, 0.1); border: 1px solid var(--mil-gold); color: var(--mil-gold); font-size: 16px; font-weight: 800; padding: 0; transition: 0.3s; }
-        .mil-joker-btn:hover:not(.used) { background: var(--mil-gold); color: black; box-shadow: 0 0 15px rgba(230, 194, 122, 0.5); transform: translateY(-3px); }
-        .mil-joker-btn.used { text-decoration: line-through; opacity: 0.3; border-color: gray; color: gray; pointer-events: none; }
+        .name-input { width: 90%; padding: 15px; font-size: 18px; text-align: center; border-radius: 16px; border: 2px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; font-family: 'Montserrat'; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; outline: none; margin-bottom: 15px; transition: 0.3s; }
+        .name-input:focus { border-color: var(--primary); box-shadow: 0 0 20px rgba(0,229,255,0.4); }
 
-        .status { margin-top: 20px; font-size: 15px; color: var(--joker); font-weight: 800; min-height: 20px; letter-spacing: 0.5px; }
-        
-        /* Animasyonlar */
+        .game-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; width: 100%; }
+        .mode-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px 5px; cursor: pointer; transition: 0.3s; }
+        .mode-card:hover { background: rgba(255,255,255,0.1); transform: translateY(-3px); }
+        .mode-title { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 5px; display: block; }
+        .mode-desc { font-size: 11px; color: #94a3b8; font-weight: 600; }
+
+        .player-stats { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; font-weight: 800; background: rgba(0,0,0,0.4); padding: 12px 15px; border-radius: 12px; }
+        .lives { color: var(--danger); font-size: 16px; letter-spacing: 2px; filter: drop-shadow(0 0 5px rgba(255,65,108,0.5)); display: block; margin-top: 5px; }
+        .joker-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .joker-pill { background: rgba(0,0,0,0.5); border: 1px solid var(--mil-gold); color: var(--mil-gold); padding: 10px 20px; border-radius: 30px; font-weight: 800; font-size: 13px; cursor: pointer; transition: 0.3s; }
+        .joker-pill:hover:not(.used) { background: var(--mil-gold); color: black; transform: translateY(-3px); }
+        .joker-pill.used { opacity: 0.3; text-decoration: line-through; pointer-events: none; border-color: gray; color: gray; }
+        .game-info-text { font-size: 15px; font-weight: 800; color: #94a3b8; text-align: center; margin-bottom: 10px; }
+
+        /* --- KELİME OYUNU --- */
+        #wordGameBoard { background: var(--word-bg); }
+        .tile-board { display: flex; justify-content: center; gap: 8px; margin: 20px 0; min-height: 60px; flex-wrap: wrap; perspective: 1000px; }
+        .letter-tile { background: #f8fafc; color: #0f172a; font-size: 30px; font-weight: 900; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 10px; box-shadow: 0 6px 0 #cbd5e1, 0 10px 10px rgba(0,0,0,0.3); text-transform: uppercase; opacity: 0; }
+        .word-timer { font-size: 60px; font-weight: 900; text-align: center; color: var(--danger); text-shadow: 0 0 20px rgba(255,23,68,0.5); margin: 10px 0; transition: transform 0.2s; }
+        .word-timer.tick { transform: scale(1.1); }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
-        @keyframes pulseAlert { 0% { box-shadow: 0 0 0 0 rgba(178, 10, 44, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(178, 10, 44, 0); } 100% { box-shadow: 0 0 0 0 rgba(178, 10, 44, 0); } }
         .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--danger) !important; background: rgba(255, 65, 108, 0.1); }
+
+        /* --- MİLYONER OYUNU --- */
+        #milyonerBoard { background: var(--mil-bg); }
+        .mil-header { text-align: center; margin-bottom: 15px; }
+        .mil-prize { font-size: 38px; color: var(--mil-gold); font-weight: 900; text-shadow: 0 0 20px var(--mil-gold-glow); transition: 0.3s; margin: 10px 0; }
+        .mil-question-box { background: rgba(0, 0, 0, 0.7); border: 2px solid var(--mil-gold); border-radius: 20px; padding: 20px 15px; text-align: center; font-size: 16px; font-weight: 700; color: white; margin-bottom: 25px; box-shadow: inset 0 0 20px rgba(229, 184, 92, 0.2); position: relative; }
+        .mil-options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .mil-option-btn { background: rgba(0, 0, 0, 0.7); border: 2px solid var(--mil-gold); border-radius: 30px; padding: 15px 20px; text-align: left; font-size: 14px; font-weight: 700; color: white; cursor: pointer; transition: 0.3s; display: flex; align-items: center; }
+        .mil-option-btn span.letter { color: var(--mil-gold); margin-right: 15px; font-size: 18px; font-weight: 900; }
+        .mil-option-btn.pending { animation: pendingBlink 0.3s infinite alternate; }
+        .mil-option-btn.pending span.letter { color: #000; }
+        .mil-option-btn.correct { background: var(--success); border-color: white; color: black; box-shadow: 0 0 20px rgba(0,230,118,0.6); transform: scale(1.05); }
+        .mil-option-btn.correct span.letter { color: black; }
+        .mil-option-btn.wrong { background: var(--danger); border-color: white; box-shadow: 0 0 20px rgba(255,23,68,0.6); }
+
+        /* --- YENİ: BEKLEME LOBİSİ EKRANI --- */
+        #customRoomLobby { background: var(--word-bg); justify-content: flex-start; align-items: center; }
+        .lobby-box { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; margin-bottom: 15px; width: 100%; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; }
+        .lobby-ready-text { font-weight: 900; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <h1>🎮 Oyun Odası Pro</h1>
-    <div class="subtitle" id="playerTag">GİRİŞ BEKLENİYOR...</div>
-
+    <!-- DURUM ÇUBUĞU -->
+    <div class="status-bar">
+        <div class="ping-indicator"><div class="ping-dot" id="pingDot"></div><span id="pingText">Bağlantı Yok</span></div>
+        <div class="voice-controls">
+            <div class="voice-visualizer" id="visualizer"><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+            <button class="mic-btn" id="micBtn" onclick="toggleMute()">🎙️</button>
+        </div>
+    </div>
     <audio id="remoteAudio" autoplay playsinline></audio>
 
-    <!-- ANA MENÜ LOBİSİ -->
-    <div class="board fade-in" id="hubBoard" style="display: block;">
-        <p style="font-weight: 800; margin-bottom: 15px; font-size: 18px;">Kim Olarak Oynuyorsun?</p>
-        <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-            <button onclick="setPlayer('Yusuf')" id="btnYusuf">👦🏻 Yusuf</button>
-            <button onclick="setPlayer('Yaren')" class="btn-yaren" id="btnYaren">👧🏻 Yaren</button>
-        </div>
+    <!-- ANA MENÜ EKRANI -->
+    <div class="screen fade-in" id="hubBoard" style="display: flex;">
+        <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: #94a3b8; letter-spacing: 5px;">ESPORTS LOBBY</span></div>
         
-        <div id="gameControls" style="display: none; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
-            <button id="voiceBtn" onclick="startVoiceChat()">🎤 Sesli Sohbeti Başlat</button>
+        <div id="loginSection" style="width: 100%;">
+            <input type="text" class="name-input" id="playerNameInput" placeholder="KENDİ İSMİNİ YAZ" autocomplete="off" maxlength="10">
+            <button class="btn-modern btn-primary" onclick="login()">SİSTEME GİRİŞ YAP 🚀</button>
+        </div>
+
+        <div id="gameMenuSection" style="display: none; width: 100%;">
+            <p class="game-info-text" id="playerTag" style="color: var(--success); font-size: 16px; margin-bottom: 25px;"></p>
+            <button class="btn-modern btn-primary" id="startVoiceCallBtn" onclick="initVoiceChat()" style="background: linear-gradient(45deg, #6200ea, #b388ff); margin-bottom: 25px; font-size: 13px;">📞 GLOBAL LOBİ SESLİ SOHBET</button>
             
-            <p style="font-weight: 800; color: var(--primary); margin-top: 25px; margin-bottom: 15px; font-size: 14px; letter-spacing: 1px;">OYUN MODUNU SEÇ</p>
-            <button onclick="enterGame('word')">🔤 Seri Bağlantı (Kelime)</button>
-            <button onclick="enterGame('milyoner')" style="background: linear-gradient(45deg, #e6c27a, #c5a059); color: #141e30; box-shadow: 0 4px 15px rgba(230, 194, 122, 0.3);">💰 Ortak Kasa Milyoner</button>
+            <p style="font-weight: 800; font-size: 14px; margin-bottom: 10px; color: #94a3b8;">🔤 KELİME OYUNU</p>
+            <div class="game-mode-grid">
+                <div class="mode-card" onclick="openGame('word', 'single')">
+                    <span class="mode-title">TEK KİŞİ</span><span class="mode-desc">Bota Karşı Oyna</span>
+                </div>
+                <div class="mode-card" onclick="openRoomMenu('word')">
+                    <span class="mode-title">İKİ KİŞİ (PVP)</span><span class="mode-desc">Özel Şifreli Oda</span>
+                </div>
+            </div>
+
+            <p style="font-weight: 800; font-size: 14px; margin-top: 10px; margin-bottom: 10px; color: #94a3b8;">💰 MİLYONER (ORTAK KASA)</p>
+            <div class="game-mode-grid">
+                <div class="mode-card" style="border-color: rgba(229,184,92,0.3);" onclick="openGame('milyoner', 'single')">
+                    <span class="mode-title" style="color: var(--mil-gold);">TEK KİŞİ</span><span class="mode-desc">Tek Başına Yarış</span>
+                </div>
+                <div class="mode-card" style="border-color: rgba(229,184,92,0.3);" onclick="openRoomMenu('milyoner')">
+                    <span class="mode-title" style="color: var(--mil-gold);">İKİ KİŞİ (PVP)</span><span class="mode-desc">Özel Şifreli Oda</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ODA KUR / KATIL MENÜSÜ -->
+        <div id="roomMenuSection" style="display: none; width: 100%;">
+            <p class="game-info-text" style="color: var(--primary); font-size: 18px; margin-bottom: 20px; font-weight: 900;" id="roomMenuTitle">ÖZEL ODA</p>
+            
+            <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 16px; margin-bottom: 15px;">
+                <p style="font-size: 14px; font-weight: 800; color: var(--success); margin-bottom: 10px;">➕ YENİ ODA KUR</p>
+                <input type="text" class="name-input" id="createRoomPwd" placeholder="ODA ŞİFRESİ BELİRLE" style="padding: 12px; font-size: 15px; margin-bottom: 10px;">
+                <button class="btn-modern btn-primary" onclick="createRoom()">ODAYI OLUŞTUR</button>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 16px; margin-bottom: 15px;">
+                <p style="font-size: 14px; font-weight: 800; color: var(--danger); margin-bottom: 10px;">🔑 ODAYA KATIL</p>
+                <input type="text" class="name-input" id="joinRoomId" placeholder="5 HANELİ ODA KODU" style="padding: 12px; font-size: 15px; margin-bottom: 10px;">
+                <input type="password" class="name-input" id="joinRoomPwd" placeholder="ODA ŞİFRESİ" style="padding: 12px; font-size: 15px; margin-bottom: 10px;">
+                <button class="btn-modern btn-danger" onclick="joinRoom()">ODAYA GİR</button>
+            </div>
+            
+            <button class="btn-modern btn-action" onclick="document.getElementById('roomMenuSection').style.display='none'; document.getElementById('gameMenuSection').style.display='block';">⬅ GERİ DÖN</button>
         </div>
     </div>
 
-    <!-- KELİME OYUNU EKRANI -->
-    <div class="board fade-in" id="wordGameBoard">
+    <!-- ODA BEKLEME LOBİSİ EKRANI -->
+    <div class="screen" id="customRoomLobby">
+        <h2 class="app-title" style="font-size: 24px; margin-bottom: 10px;" id="lobbyHeader">BEKLEME LOBİSİ</h2>
+        <div class="code-box" id="lobbyRoomCode" style="margin-bottom: 5px; font-size: 22px;">-</div>
+        <p style="color: #94a3b8; font-weight: 600; font-size: 14px; margin-bottom: 25px;">ŞİFRE: <span id="lobbyRoomPwd" style="color: white;">-</span></p>
+
+        <!-- Oda Başkanı Kutusu -->
+        <div class="lobby-box" style="border-color: var(--primary);">
+            <span id="lobbyHostName" style="color: var(--primary); font-weight: 900; font-size: 16px;">👑 Bekleniyor...</span>
+            <span id="lobbyHostStatus" class="lobby-ready-text" style="color: gray;">⏳ Bekleniyor</span>
+        </div>
+
+        <!-- Misafir Kutusu -->
+        <div class="lobby-box" style="border-color: var(--danger);">
+            <span id="lobbyGuestName" style="color: var(--danger); font-weight: 900; font-size: 16px;">Bekleniyor...</span>
+            <span id="lobbyGuestStatus" class="lobby-ready-text" style="color: gray;">⏳ Bekleniyor</span>
+        </div>
+
+        <button class="btn-modern btn-action" id="lobbyReadyBtn" onclick="toggleReady()" style="margin-top: 20px;">HAZIR OL ✔️</button>
+        <button class="btn-modern btn-primary" id="lobbyStartBtn" onclick="startCustomGame()" style="display: none; background: linear-gradient(45deg, #00c853, #b2ff59); color: black;">OYUNU BAŞLAT 🚀</button>
+        <button class="btn-modern btn-danger" onclick="leaveLobby()" style="margin-top: auto;">ODADAN ÇIK 🚪</button>
+    </div>
+
+    <!-- KELİME OYUNU -->
+    <div class="screen" id="wordGameBoard">
         <div class="player-stats">
-            <div>YUSUF<br><span id="livesYusuf" class="lives">❤️❤️❤️</span></div>
-            <div style="text-align: right;">YAREN<br><span id="livesYaren" class="lives">❤️❤️❤️</span></div>
+            <div><span id="wName1" style="color: var(--primary);">OYUNCU 1</span><span id="wLives1" class="lives">❤️❤️❤️</span></div>
+            <div style="text-align: right;"><span id="wName2" style="color: var(--danger);">OYUNCU 2</span><span id="wLives2" class="lives">❤️❤️❤️</span></div>
         </div>
-        <div class="timer" id="timer">15</div>
-        <div class="word-display" id="currentWord">BAŞLA</div>
-        <input type="text" id="wordInput" placeholder="KELİME YAZ..." autocomplete="off">
-        <button id="sendBtn" onclick="sendWord()">GÖNDER 🚀</button>
-        <button id="objectionBtn" class="btn-objection" onclick="objectWord()">🚨 İTİRAZ ET (Özel İsim!)</button>
+        <div class="word-timer" id="wTimer">15</div>
+        <div class="tile-board" id="wCurrentWord"></div>
+        <input type="text" class="name-input" id="wInput" placeholder="KELİME YAZ..." style="margin-bottom: 10px; padding: 15px;">
+        <button class="btn-modern btn-primary" id="wSendBtn" onclick="sendWord()">GÖNDER</button>
         
-        <div class="jokers">
-            <button id="jokerHint" class="btn-joker" onclick="useWordJoker('hint')">💡 İpucu</button>
-            <button id="jokerTime" class="btn-joker" onclick="useWordJoker('time')">⏳ +10 Sn</button>
-            <button id="jokerChange" class="btn-joker" onclick="useWordJoker('change')">🔀 Değiştir</button>
+        <div class="joker-container" style="margin-top: 5px;">
+            <div class="joker-pill" id="wJokerHint" onclick="useWordJoker('hint')" style="border-color: #38bdf8; color: #38bdf8;">💡 İpucu</div>
+            <div class="joker-pill" id="wJokerTime" onclick="useWordJoker('time')" style="border-color: #38bdf8; color: #38bdf8;">⏳ +10 Sn</div>
         </div>
-        <div class="status" id="statusMessage">Rakip bekleniyor...</div>
-        <div style="display: flex; gap: 10px; margin-top: 25px;">
-            <button onclick="goToHub()" class="btn-menu">⬅ Lobi</button>
-            <button onclick="resetWordGame()" class="btn-menu">🔄 Sıfırla</button>
+        <p class="game-info-text" id="wStatus" style="color: var(--joker);"></p>
+        <div style="display: flex; gap: 10px; margin-top: auto;">
+            <button class="btn-modern btn-danger" onclick="leaveLobby()">⬅ LOBİDEN ÇIK</button>
         </div>
     </div>
 
-    <!-- MİLYONER OYUNU EKRANI -->
-    <div class="board mil-board fade-in" id="milyonerBoard">
-        <div class="mil-jokers">
-            <button class="mil-joker-btn" id="milJoker50" onclick="useMilJoker('fifty')">%50</button>
-            <button class="mil-joker-btn" id="milJokerPhone" onclick="useMilJoker('phone')">☎</button>
-            <button class="mil-joker-btn" id="milJokerAudience" onclick="useMilJoker('audience')">👥</button>
+    <!-- MİLYONER OYUNU -->
+    <div class="screen" id="milyonerBoard">
+        <div class="player-stats" style="background: transparent; padding: 0;">
+            <div><span id="mName1" style="color: var(--primary);">OYUNCU 1</span></div>
+            <div style="text-align: right;"><span id="mName2" style="color: var(--danger);">OYUNCU 2</span></div>
         </div>
-        
-        <div class="player-stats" style="color: white; margin-bottom: 5px; background: transparent; padding: 0;">
-            <span id="milTurnText" style="color: var(--mil-gold); font-size: 16px;">Sıra: Bekleniyor...</span>
-            <span id="milQuestionNumber" style="color: rgba(255,255,255,0.7);">Soru: 1/12</span>
+        <div class="mil-header">
+            <p class="game-info-text" id="mTurn">Sıra Bekleniyor...</p>
+            <div class="mil-prize" id="mPrize">500 ₺</div>
+            <p class="game-info-text" id="mQuestionNum">Soru: 1/12</p>
         </div>
-        
-        <div class="mil-prize" id="milPrizeText">500 ₺</div>
-        <div class="mil-question" id="milQuestionText">Soru Yükleniyor...</div>
-        
-        <div class="mil-options">
-            <button class="mil-option" data-letter="A" id="milOpt0" onclick="selectMilOption(0)">-</button>
-            <button class="mil-option" data-letter="B" id="milOpt1" onclick="selectMilOption(1)">-</button>
-            <button class="mil-option" data-letter="C" id="milOpt2" onclick="selectMilOption(2)">-</button>
-            <button class="mil-option" data-letter="D" id="milOpt3" onclick="selectMilOption(3)">-</button>
+        <div class="joker-container">
+            <div class="joker-pill" id="mJoker50" onclick="useMilJoker('fifty')">%50</div>
+            <div class="joker-pill" id="mJokerPhone" onclick="useMilJoker('phone')">☎ Telefon</div>
+            <div class="joker-pill" id="mJokerAudience" onclick="useMilJoker('audience')">👥 Seyirci</div>
         </div>
-
-        <div class="status" id="milStatusMessage" style="color: white;"></div>
-        <div style="display: flex; gap: 10px; margin-top: 25px;">
-            <button onclick="goToHub()" class="btn-menu">⬅ Lobi</button>
-            <button onclick="resetMilyoner()" class="btn-menu" style="border-color: var(--mil-gold); color: var(--mil-gold);">🔄 Baştan Başla</button>
+        <div class="mil-question-box" id="mQuestionText">Soru Yükleniyor...</div>
+        <div class="mil-options-grid">
+            <button class="mil-option-btn" id="mOpt0" onclick="selectMilOption(0)"><span class="letter">A</span> <span class="text" id="mText0">-</span></button>
+            <button class="mil-option-btn" id="mOpt1" onclick="selectMilOption(1)"><span class="letter">B</span> <span class="text" id="mText1">-</span></button>
+            <button class="mil-option-btn" id="mOpt2" onclick="selectMilOption(2)"><span class="letter">C</span> <span class="text" id="mText2">-</span></button>
+            <button class="mil-option-btn" id="mOpt3" onclick="selectMilOption(3)"><span class="letter">D</span> <span class="text" id="mText3">-</span></button>
+        </div>
+        <p class="game-info-text" id="mStatus" style="margin-top: 15px; font-size: 15px;"></p>
+        <div style="display: flex; gap: 10px; margin-top: auto;">
+            <button class="btn-modern btn-danger" onclick="leaveLobby()">⬅ LOBİDEN ÇIK</button>
         </div>
     </div>
 
     <script>
-        // FIREBASE BAĞLANTISI
+        // --- 0. SES MOTORU & SÖZLÜK ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        const SFX = {
+            click: () => playTone(600, 'sine', 0.1, 0.05),
+            tick: () => playTone(1200, 'triangle', 0.05, 0.02),
+            correct: () => { playTone(523.25, 'sine', 0.1); setTimeout(() => playTone(659.25, 'sine', 0.2), 100); setTimeout(() => playTone(783.99, 'sine', 0.4), 200); },
+            wrong: () => { playTone(300, 'sawtooth', 0.3, 0.1); setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.1), 200); },
+            suspense: () => { playTone(400, 'sine', 1.5, 0.03); playTone(405, 'sine', 1.5, 0.03); }
+        };
+        document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.classList.contains('joker-pill')) SFX.click(); });
+
+        const dict = {
+            'A': ['ARABA', 'AKŞAM', 'ARMUT', 'ANAHTAR'], 'B': ['BARDAK', 'BALIK', 'BİLGİ', 'BAHÇE'],
+            'C': ['CEVİZ', 'CESUR', 'CAMİ', 'CEVAP'], 'Ç': ['ÇİÇEK', 'ÇANTA', 'ÇOCUK', 'ÇADIR'],
+            'D': ['DUVAR', 'DÜNYA', 'DOLAP', 'DEMİR'], 'E': ['ELMA', 'EVREN', 'ENERJİ', 'EKMEK'],
+            'F': ['FARE', 'FİKİR', 'FIRTINA', 'FISTIK'], 'G': ['GÜNEŞ', 'GEMİ', 'GECE', 'GÖLGE'],
+            'H': ['HAVA', 'HAYAT', 'HUZUR', 'HESAP'], 'I': ['IRMAK', 'IŞIK', 'IZGARA', 'ISLAK'],
+            'İ': ['İNSAN', 'İKLİM', 'İSİM', 'İPİCİ'], 'K': ['KİTAP', 'KEDİ', 'KALEM', 'KABLO'],
+            'L': ['LİMON', 'LALE', 'LOKUM', 'LASTİK'], 'M': ['MASA', 'MEYVE', 'MOTOR', 'MAKİNE'],
+            'N': ['NAR', 'NEHİR', 'NANE', 'NOKTA'], 'O': ['ORMAN', 'OKUL', 'OYUN', 'OKYANUS'],
+            'Ö': ['ÖĞRENCİ', 'ÖZLEM', 'ÖRDEK', 'ÖDÜL'], 'P': ['PARA', 'PORTAKAL', 'PENCERE', 'PANO'],
+            'R': ['RENK', 'RÜZGAR', 'RESİM', 'RAKAM'], 'S': ['SİSTEM', 'SAAT', 'SABAH', 'SENSÖR'],
+            'Ş': ['ŞEHİR', 'ŞARK', 'ŞEKER', 'ŞEKİL'], 'T': ['TOPRAK', 'TARİH', 'TAVUK', 'TABLO'],
+            'U': ['UÇAK', 'UMUT', 'UZAY', 'UYGULAMA'], 'Ü': ['ÜZÜM', 'ÜLKE', 'ÜMİT', 'ÜNİVERSİTE'],
+            'V': ['VAKİT', 'VAPUR', 'VİZYON', 'VİDA'], 'Y': ['YOL', 'YILDIZ', 'YEMEK', 'YAPRAK'],
+            'Z': ['ZAMAN', 'ZEKA', 'ZİNCİR', 'ZENGİN']
+        };
+
+        // --- 1. FIREBASE BAĞLANTISI ---
         const firebaseConfig = {
             apiKey: "AIzaSyCV8vsi4zIZbMQyBqyrbnu6liJkyTk_rcI",
             authDomain: "kelimeoyunu-9c9c2.firebaseapp.com",
             databaseURL: "https://kelimeoyunu-9c9c2-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "kelimeoyunu-9c9c2",
-            storageBucket: "kelimeoyunu-9c9c2.firebasestorage.app",
-            messagingSenderId: "1081194409058",
-            appId: "1:1081194409058:web:2abf3c249fc3f66d31b53b"
+            projectId: "kelimeoyunu-9c9c2"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let myPlayer = "";
+        
+        let myPlayer = ""; let currentMode = ""; let selectedGameType = "";
+        let currentGameRef = null; let activeRoomId = null; let currentRoomData = null;
+        let peer, dataConn, localStream; let isMuted = false;
 
-        // LOBİ SİSTEMİ
-        function setPlayer(player) {
-            myPlayer = player;
-            document.getElementById('playerTag').innerText = "Aktif Oyuncu: " + player.toUpperCase();
-            document.getElementById('playerTag').style.color = player === 'Yusuf' ? 'var(--primary)' : 'var(--danger)';
-            document.getElementById('btnYusuf').style.opacity = player === 'Yusuf' ? '1' : '0.3';
-            document.getElementById('btnYaren').style.opacity = player === 'Yaren' ? '1' : '0.3';
-            document.getElementById('gameControls').style.display = 'block';
+        // --- 2. LOBİ GEÇİŞLERİ ---
+        function login() {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const input = document.getElementById('playerNameInput').value.trim().toUpperCase();
+            if(input.length < 2) { alert("Lütfen en az 2 harfli bir isim girin!"); return; }
+            myPlayer = input;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('gameMenuSection').style.display = 'block';
+            document.getElementById('playerTag').innerText = "KİMLİK: " + myPlayer;
         }
 
-        function showScreen(screenId) {
-            ['hubBoard', 'wordGameBoard', 'milyonerBoard'].forEach(id => {
-                const el = document.getElementById(id);
-                el.style.display = 'none';
-                el.classList.remove('fade-in');
+        function showScreen(id) {
+            ['hubBoard', 'customRoomLobby', 'wordGameBoard', 'milyonerBoard'].forEach(s => { 
+                document.getElementById(s).style.display = 'none'; document.getElementById(s).classList.remove('fade-in'); 
             });
-            const target = document.getElementById(screenId);
-            target.style.display = 'block';
-            // Trigger reflow to restart animation
-            void target.offsetWidth;
-            target.classList.add('fade-in');
+            const el = document.getElementById(id);
+            el.style.display = 'flex'; void el.offsetWidth; el.classList.add('fade-in');
         }
 
-        function goToHub() {
-            showScreen('hubBoard');
-            clearInterval(wordCountdown);
+        function backToHub() { 
+            showScreen('hubBoard'); clearInterval(wInterval); document.body.classList.remove('panic-mode');
+            if(currentGameRef) currentGameRef.off();
+            document.getElementById('gameMenuSection').style.display = 'block';
+            document.getElementById('roomMenuSection').style.display = 'none';
         }
 
-        function enterGame(game) {
-            if(game === 'word') {
-                showScreen('wordGameBoard');
-                initWordGame();
-            } else if(game === 'milyoner') {
-                showScreen('milyonerBoard');
-                initMilyoner();
+        function openGame(game, mode) {
+            currentMode = mode; selectedGameType = game;
+            
+            if(mode === 'single') {
+                showScreen(game === 'word' ? 'wordGameBoard' : 'milyonerBoard');
+                activeRoomId = 'single_' + myPlayer;
+                currentGameRef = db.ref('activeGames/' + game + '/' + activeRoomId);
+                
+                if(game === 'word') {
+                    currentGameRef.set({ p1: myPlayer, p2: "SİSTEM", p1Lives: 3, p2Lives: 3, word: "BAŞLA", turn: myPlayer, timer: 15, used: {"BAŞLA":true}, status: "Sıra Sende!" });
+                    initWordGame();
+                } else {
+                    currentGameRef.set({ p1: myPlayer, p2: "BİLGİSAYAR", qIdx: 0, turn: myPlayer, over: false, status: "Hedef: 1 Milyon TL.", j: {f:true, p:true, a:true}, selecting: false });
+                    initMilyoner();
+                }
             }
         }
 
-        // SESLİ SOHBET (WEBRTC) SİSTEMİ
-        let peer; let voiceActive = false;
-        async function startVoiceChat() {
-            if (voiceActive) return;
-            const btn = document.getElementById('voiceBtn');
-            btn.innerText = "⏳ Mikrofon İzni Bekleniyor...";
+        // --- 3. ÖZEL ODA & BEKLEME LOBİSİ & YETKİ DEVRİ ---
+        function openRoomMenu(game) {
+            selectedGameType = game; currentMode = 'pvp';
+            document.getElementById('gameMenuSection').style.display = 'none';
+            document.getElementById('roomMenuSection').style.display = 'block';
+            document.getElementById('roomMenuTitle').innerText = game === 'word' ? "KELİME OYUNU ÖZEL ODA" : "MİLYONER ÖZEL ODA";
+        }
 
+        function createRoom() {
+            const pwd = document.getElementById('createRoomPwd').value.trim();
+            if(!pwd) { alert('Lütfen odaya bir şifre koyun.'); return; }
+            const roomId = Math.random().toString(36).substr(2, 5).toUpperCase();
+            
+            activeRoomId = roomId;
+            currentGameRef = db.ref(`customRooms/${selectedGameType}/${roomId}`);
+            
+            // Odayı Kur ve Lobiyi Aç
+            currentGameRef.set({
+                host: myPlayer, guest: "Bekleniyor...", password: pwd, status: "lobby",
+                hostReady: false, guestReady: false
+            });
+
+            // Disconnect olursa oda yetkisini devretmek için silinmeyi önle, host'u bekliyor yap
+            currentGameRef.child('host').onDisconnect().set("Bekleniyor...");
+            
+            initRoomLobby();
+        }
+
+        function joinRoom() {
+            const roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+            const pwd = document.getElementById('joinRoomPwd').value.trim();
+            if(!roomId || !pwd) { alert('Lütfen Oda Kodunu ve Şifreyi girin.'); return; }
+            
+            const tempRef = db.ref(`customRooms/${selectedGameType}/${roomId}`);
+            tempRef.once('value', snap => {
+                const data = snap.val();
+                if(!data) { alert('Böyle bir oda bulunamadı!'); return; }
+                if(data.password !== pwd) { alert('Hatalı Şifre!'); return; }
+                if(data.guest !== "Bekleniyor..." && data.guest !== myPlayer) { alert('Bu oda dolu!'); return; }
+                
+                activeRoomId = roomId;
+                currentGameRef = tempRef;
+                
+                currentGameRef.update({ guest: myPlayer, guestReady: false });
+                currentGameRef.child('guest').onDisconnect().set("Bekleniyor...");
+                
+                initRoomLobby();
+            });
+        }
+
+        function initRoomLobby() {
+            showScreen('customRoomLobby');
+            document.getElementById('lobbyRoomCode').innerText = activeRoomId;
+            
+            currentGameRef.on('value', snap => {
+                const data = snap.val();
+                if(!data) { alert("Oda kapatıldı."); backToHub(); return; }
+                currentRoomData = data;
+                
+                document.getElementById('lobbyRoomPwd').innerText = data.password;
+
+                // --- OTOMATİK BAŞKANLIK DEVRİ ---
+                // Eğer Oda Başkanı çıktıysa ve ben Misafirsem, Oda Başkanı ben olurum!
+                if (data.host === "Bekleniyor..." && data.guest === myPlayer) {
+                    currentGameRef.update({ host: myPlayer, guest: "Bekleniyor...", hostReady: data.guestReady, guestReady: false });
+                    return; // Update sonrası yeniden tetiklenecek
+                }
+
+                // --- OYUN BAŞLAMA KONTROLÜ ---
+                if(data.status === "playing") {
+                    currentGameRef.off(); // Lobi dinlemeyi bırak
+                    showScreen(selectedGameType === 'word' ? 'wordGameBoard' : 'milyonerBoard');
+                    if(selectedGameType === 'word') initWordGame(); else initMilyoner();
+                    return;
+                }
+
+                // Lobi Arayüzünü Güncelle
+                document.getElementById('lobbyHostName').innerText = data.host !== "Bekleniyor..." ? "👑 " + data.host : "Bekleniyor...";
+                document.getElementById('lobbyGuestName').innerText = data.guest;
+
+                document.getElementById('lobbyHostStatus').innerText = data.hostReady ? "✅ HAZIR" : "⏳ Bekleniyor";
+                document.getElementById('lobbyHostStatus').style.color = data.hostReady ? "var(--success)" : "gray";
+
+                document.getElementById('lobbyGuestStatus').innerText = data.guestReady ? "✅ HAZIR" : "⏳ Bekleniyor";
+                document.getElementById('lobbyGuestStatus').style.color = data.guestReady ? "var(--success)" : "gray";
+
+                const isHost = myPlayer === data.host;
+                const amIReady = isHost ? data.hostReady : data.guestReady;
+
+                const readyBtn = document.getElementById('lobbyReadyBtn');
+                readyBtn.innerText = amIReady ? "İPTAL ET (HAZIR DEĞİLİM)" : "HAZIR OL ✔️";
+                readyBtn.className = amIReady ? "btn-modern btn-danger" : "btn-modern btn-action";
+
+                const startBtn = document.getElementById('lobbyStartBtn');
+                if (isHost) {
+                    startBtn.style.display = 'block';
+                    if (data.hostReady && data.guestReady) {
+                        startBtn.disabled = false; startBtn.innerText = "OYUNU BAŞLAT 🚀"; startBtn.style.opacity = 1;
+                    } else {
+                        startBtn.disabled = true; startBtn.innerText = "HERKESİN HAZIR OLMASI BEKLENİYOR"; startBtn.style.opacity = 0.5;
+                    }
+                } else {
+                    startBtn.style.display = 'none';
+                }
+            });
+        }
+
+        function toggleReady() {
+            if(!currentRoomData) return;
+            const isHost = myPlayer === currentRoomData.host;
+            const field = isHost ? 'hostReady' : 'guestReady';
+            currentGameRef.child(field).set(!currentRoomData[field]);
+        }
+
+        function startCustomGame() {
+            if(!currentRoomData || currentRoomData.host !== myPlayer) return;
+            
+            // Oyun Veritabanını Hazırla ve Lobi Statüsünü Değiştir
+            const gameRef = db.ref(`activeGames/${selectedGameType}/${activeRoomId}`);
+            if(selectedGameType === 'word') {
+                gameRef.set({ p1: currentRoomData.host, p2: currentRoomData.guest, p1Lives: 3, p2Lives: 3, word: "BAŞLA", turn: currentRoomData.host, timer: 15, used: {"BAŞLA":true}, status: "Oyun Başladı!" });
+            } else {
+                gameRef.set({ p1: currentRoomData.host, p2: currentRoomData.guest, qIdx: 0, turn: currentRoomData.host, over: false, status: "Hedef: 1 Milyon TL!", j: {f:true, p:true, a:true}, selecting: false });
+            }
+            
+            currentGameRef.update({ status: "playing" });
+        }
+
+        function leaveLobby() {
+            if(!currentRoomData) { backToHub(); return; }
+            if(myPlayer === currentRoomData.host) {
+                if(currentRoomData.guest !== "Bekleniyor...") {
+                    // Misafire Başkanlığı Devret
+                    currentGameRef.update({ host: currentRoomData.guest, guest: "Bekleniyor...", hostReady: currentRoomData.guestReady, guestReady: false, status: "lobby" });
+                } else {
+                    currentGameRef.remove(); // Odada kimse kalmadı, sil
+                }
+            } else {
+                currentGameRef.update({ guest: "Bekleniyor...", guestReady: false, status: "lobby" });
+            }
+            
+            // Bağlantı kopma kancalarını iptal et
+            currentGameRef.child('host').onDisconnect().cancel();
+            currentGameRef.child('guest').onDisconnect().cancel();
+            
+            backToHub();
+        }
+
+
+        // --- 4. GLOBAL SESLİ SOHBET ---
+        async function initVoiceChat() {
+            const btn = document.getElementById('startVoiceCallBtn'); btn.innerText = "⏳ İzin Bekleniyor...";
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                btn.innerText = "🎤 Sesli Sohbet Aktif (Bağlanıyor...)";
-                btn.classList.add('active');
-                voiceActive = true;
-
-                const myPeerId = `oyunodasi-yusufyaren2026-${myPlayer}`;
-                const opponentId = `oyunodasi-yusufyaren2026-${myPlayer === 'Yusuf' ? 'Yaren' : 'Yusuf'}`;
-                peer = new Peer(myPeerId);
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                btn.innerText = "Bağlanıyor..."; analyzeAudio(localStream);
+                const myId = "vchat-" + Math.random().toString(36).substr(2, 9);
+                peer = new Peer(myId);
 
                 peer.on('open', (id) => {
-                    btn.innerText = "🎤 Sesli Sohbet Aktif (Dinleniyor)";
-                    const call = peer.call(opponentId, stream);
-                    if (call) {
-                        call.on('stream', (remoteStream) => {
-                            document.getElementById('remoteAudio').srcObject = remoteStream;
-                            btn.innerText = myPlayer === 'Yusuf' ? "🎤 Yaren'le Konuşuyorsun" : "🎤 Yusuf'la Konuşuyorsun";
-                        });
-                    }
+                    btn.innerText = "🎤 Sesli Lobi Aktif"; btn.style.background = "var(--success-dark)";
+                    db.ref('voiceLobby/' + myPlayer).set(id);
+                    db.ref('voiceLobby').on('child_added', snap => {
+                        if(snap.key !== myPlayer) {
+                            let call = peer.call(snap.val(), localStream);
+                            if(call) call.on('stream', s => document.getElementById('remoteAudio').srcObject = s);
+                            let conn = peer.connect(snap.val());
+                            if(conn) conn.on('open', () => setupPing(conn));
+                        }
+                    });
                 });
 
                 peer.on('call', (call) => {
-                    call.answer(stream);
-                    call.on('stream', (remoteStream) => {
-                        document.getElementById('remoteAudio').srcObject = remoteStream;
-                        btn.innerText = myPlayer === 'Yusuf' ? "🎤 Yaren'le Konuşuyorsun" : "🎤 Yusuf'la Konuşuyorsun";
-                    });
+                    call.answer(localStream);
+                    call.on('stream', s => document.getElementById('remoteAudio').srcObject = s);
                 });
-            } catch (err) {
-                alert("Mikrofon izni reddedildi. Sesli sohbet için ayarlardan mikrofona izin vermelisin.");
-                btn.innerText = "❌ Mikrofon Hatası";
-                voiceActive = false;
-            }
+                peer.on('connection', (conn) => { conn.on('open', () => setupPing(conn)); });
+            } catch(e) { btn.innerText = "❌ Mikrofon İzni Gerekli"; }
         }
 
-        // MİLYONER OYUNU
-        const milQuestions = [
-            { q: "Hangisi Zonguldak'ın Karadeniz kıyısında yer alan meşhur ilçesidir?", opts: ["Alaplı", "Kozlu", "Ereğli", "Çaycuma"], ans: 2, prize: "500 ₺" },
-            { q: "Ev yapımı çıtır tavuk hazırlarken, hamuru sarmak için genelde hangisi KULLANILMAZ?", opts: ["Un", "Yumurta", "Yufka", "Galeta Unu"], ans: 2, prize: "1.000 ₺" },
-            { q: "Mobile Legends oyununda, zırh kırma yeteneğiyle bilinen ve Abis gücünü kullanan kahraman kimdir?", opts: ["Alucard", "Dyrroth", "Brody", "Chou"], ans: 1, prize: "2.000 ₺" },
-            { q: "Arduino projelerinde, ortamın sıcaklık ve nemini ölçmek için sıklıkla kullanılan mavi renkli sensörün adı nedir?", opts: ["HC-SR04", "LM35", "PIR", "DHT11"], ans: 3, prize: "3.000 ₺" },
-            { q: "Dijital elektronikte (Proteus/ARES) hangisi temel mantık kapılarından biri DEĞİLDİR?", opts: ["NAND", "MAYBE", "NOR", "AND"], ans: 1, prize: "5.000 ₺" },
-            { q: "Su, şeker, süt ve fıstıkla yoğrulan meşhur yöresel tatlının adı nedir?", opts: ["Kazandibi", "Cennet Çamuru", "Sütlaç", "Keşkül"], ans: 1, prize: "7.500 ₺" },
-            { q: "Astrolojiye göre, 2 Mart tarihinde doğan birinin burcu nedir?", opts: ["Kova", "Balık", "Koç", "Boğa"], ans: 1, prize: "15.000 ₺" },
-            { q: "Bir Dacia Dokker Lodgy aracın, elle içeriden ayarlanan ayna camı sistemine teknik olarak ne ad verilir?", opts: ["Elektrikli", "Otomatik", "Mekanik", "Sensörlü"], ans: 2, prize: "30.000 ₺" },
-            { q: "Türkiye'de genellikle 1 ay süren ve ücret karşılığı yapılan askerlik hizmetine ne ad verilir?", opts: ["Dövizli", "Yoklama", "Bedelli", "Yedek Subaylık"], ans: 2, prize: "60.000 ₺" },
-            { q: "Hangi yazılım dili, mobil cihazlarda otomasyon scriptleri çalıştırmak için sıkça kullanılır?", opts: ["HTML", "Python", "CSS", "SQL"], ans: 1, prize: "125.000 ₺" },
-            { q: "Duino-Coin ağı üzerinde madencilik yapmak için genellikle hangi platformun sunucuları kullanılır?", opts: ["Instagram", "WhatsApp", "GitHub Actions", "Netflix"], ans: 2, prize: "250.000 ₺" },
-            { q: "Elektrik pano tasarımında, devreyi aşırı akıma karşı koruyan sisteme ne ad verilir?", opts: ["Röle", "Kısa Devre (Şalter)", "Kontaktör", "Kondansatör"], ans: 1, prize: "1.000.000 ₺" }
-        ];
-
-        let milState = {};
-        function initMilyoner() {
-            db.ref('milyoner').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if(!data) resetMilyoner(); else updateMilUI(data);
-            });
+        function toggleMute() {
+            if(!localStream) return; isMuted = !isMuted;
+            localStream.getAudioTracks()[0].enabled = !isMuted;
+            const micBtn = document.getElementById('micBtn');
+            micBtn.innerText = isMuted ? "🔇" : "🎙️"; micBtn.classList.toggle('muted', isMuted);
         }
 
-        function resetMilyoner() {
-            db.ref('milyoner').set({
-                qIndex: 0, turn: "Yusuf", isGameOver: false,
-                status: "🎯 Oyun Başladı! Hedef: 1 Milyon TL.",
-                jokers: { fifty: true, phone: true, audience: true }
-            });
-        }
-
-        function updateMilUI(data) {
-            milState = data;
-            const qData = milQuestions[data.qIndex];
-            
-            document.getElementById('milPrizeText').innerText = qData ? qData.prize : "🏆 1.000.000 ₺ 🏆";
-            document.getElementById('milQuestionNumber').innerText = `Soru: ${data.qIndex + 1}/12`;
-            
-            document.getElementById('milJoker50').className = `mil-joker-btn ${data.jokers.fifty ? '' : 'used'}`;
-            document.getElementById('milJokerPhone').className = `mil-joker-btn ${data.jokers.phone ? '' : 'used'}`;
-            document.getElementById('milJokerAudience').className = `mil-joker-btn ${data.jokers.audience ? '' : 'used'}`;
-            
-            if(data.isGameOver) {
-                document.getElementById('milQuestionText').innerText = "OYUN BİTTİ!";
-                document.getElementById('milStatusMessage').innerText = data.status;
-                for(let i=0; i<4; i++) {
-                    const btn = document.getElementById('milOpt'+i);
-                    btn.innerText = "-"; btn.disabled = true; btn.classList.remove('disabled');
+        function setupPing(conn) {
+            conn.on('data', (d) => {
+                if(d.type === 'ping') conn.send({type: 'pong', time: d.time});
+                if(d.type === 'pong') {
+                    let ms = Date.now() - d.time; document.getElementById('pingText').innerText = ms + " ms";
+                    document.getElementById('pingDot').style.background = ms < 70 ? 'var(--success)' : (ms < 150 ? 'var(--joker)' : 'var(--danger)');
                 }
-                return;
-            }
-
-            if(data.qIndex >= milQuestions.length) {
-                document.getElementById('milQuestionText').innerText = "🎉 MÜKEMMEL UYUM! 1 MİLYON TL KAZANDINIZ! 🎉";
-                return;
-            }
-
-            document.getElementById('milQuestionText').innerText = qData.q;
-            document.getElementById('milStatusMessage').innerText = data.status;
-            
-            const isMyTurn = data.turn === myPlayer;
-            document.getElementById('milTurnText').innerText = `Sıra: ${data.turn.toUpperCase()}`;
-            document.getElementById('milTurnText').style.color = isMyTurn ? "var(--success)" : "var(--danger)";
-
-            for(let i=0; i<4; i++) {
-                const btn = document.getElementById('milOpt'+i);
-                btn.innerText = qData.opts[i];
-                btn.className = "mil-option";
-                btn.disabled = !isMyTurn; 
-            }
+            });
+            setInterval(() => { if(conn.open) conn.send({type: 'ping', time: Date.now()}); }, 2000);
         }
 
-        function selectMilOption(optIndex) {
-            if(milState.turn !== myPlayer || milState.isGameOver) return;
-            const qData = milQuestions[milState.qIndex];
-            const btn = document.getElementById('milOpt'+optIndex);
-            
-            if(optIndex === qData.ans) {
-                btn.classList.add('correct');
-                setTimeout(() => {
-                    const nextTurn = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
-                    db.ref('milyoner').update({ qIndex: milState.qIndex + 1, turn: nextTurn, status: `✨ Harika! ${myPlayer} doğru bildi. Sıra ${nextTurn}'ta.` });
-                }, 1200);
-            } else {
-                btn.classList.add('wrong');
-                document.getElementById('milOpt'+qData.ans).classList.add('correct');
-                setTimeout(() => {
-                    db.ref('milyoner').update({ isGameOver: true, status: `💥 YANLIŞ! ${myPlayer} elendi. İkiniz de kaybettiniz!` });
-                }, 2000);
-            }
+        function analyzeAudio(stream) {
+            const analyser = audioCtx.createAnalyser(); audioCtx.createMediaStreamSource(stream).connect(analyser);
+            const dataArray = new Uint8Array(analyser.frequencyBinCount); const bars = document.querySelectorAll('.bar');
+            function render() {
+                requestAnimationFrame(render);
+                if(isMuted) { bars.forEach(b => b.style.height = '4px'); return; }
+                analyser.getByteFrequencyData(dataArray);
+                let avg = dataArray.reduce((a,b)=>a+b, 0) / dataArray.length;
+                if(avg > 10) {
+                    bars[0].style.height = (avg/2)+'px'; bars[1].style.height = (avg/1.5)+'px';
+                    bars[2].style.height = (avg/1.8)+'px'; bars[3].style.height = (avg/2.5)+'px';
+                    document.getElementById('visualizer').classList.add('active');
+                } else { bars.forEach(b => b.style.height = '4px'); document.getElementById('visualizer').classList.remove('active'); }
+            } render();
         }
 
-        function useMilJoker(type) {
-            if(milState.turn !== myPlayer || milState.isGameOver || !milState.jokers[type]) return;
-            const qData = milQuestions[milState.qIndex];
-
-            if(type === 'fifty') {
-                let removed = 0;
-                for(let i=0; i<4; i++) {
-                    if(i !== qData.ans && removed < 2) {
-                        document.getElementById('milOpt'+i).classList.add('disabled');
-                        removed++;
-                    }
-                }
-                db.ref('milyoner/jokers/fifty').set(false);
-                db.ref('milyoner/status').set(`💡 ${myPlayer}, %50 Jokerini kullandı.`);
-            } 
-            else if(type === 'phone') {
-                db.ref('milyoner/jokers/phone').set(false);
-                db.ref('milyoner/status').set(`☎ Arama: "Emin değilim ama bence cevap ${['A','B','C','D'][qData.ans]} şıkkı."`);
-            } 
-            else if(type === 'audience') {
-                db.ref('milyoner/jokers/audience').set(false);
-                db.ref('milyoner/status').set(`👥 Seyirci: Seyircilerin %85'i ${['A','B','C','D'][qData.ans]} şıkkını seçti!`);
-            }
-        }
-
-        // KELİME OYUNU
-        let wordCountdown; let wordState = {};
+        // --- 5. KELİME OYUNU LOGIC ---
+        let wState = {}; let wInterval;
         
         function initWordGame() {
-            db.ref('game').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if(!data) resetWordGame(); else updateWordUI(data);
+            const gameRef = db.ref(`activeGames/word/${activeRoomId}`);
+            gameRef.on('value', snap => { 
+                let data = snap.val(); if(!data) { leaveLobby(); return; } updateWordUI(data); 
             });
         }
 
         function resetWordGame() {
-            db.ref('game').set({
-                currentWord: "REKABET", turn: "Yusuf", timer: 15,
-                yusufLives: 3, yarenLives: 3, usedWords: { "REKABET": true },
-                jokers: { Yusuf: { hint: true, time: true, change: true }, Yaren: { hint: true, time: true, change: true } },
-                status: "🔥 Oyun başladı! Sıra Yusuf'ta (T ile başla)"
-            });
+            const gameRef = db.ref(`activeGames/word/${activeRoomId}`);
+            if(currentMode === 'single') {
+                gameRef.set({ p1: myPlayer, p2: "SİSTEM", p1Lives: 3, p2Lives: 3, word: "BAŞLA", turn: myPlayer, timer: 15, used: {"BAŞLA":true}, status: "Sıra Sende!" });
+            } else {
+                gameRef.once('value', snap => {
+                    let d = snap.val(); if(d) gameRef.set({ p1: d.p1, p2: d.p2, p1Lives: 3, p2Lives: 3, word: "BAŞLA", turn: d.p1, timer: 15, used: {"BAŞLA":true}, status: `Sıra ${d.p1}'da!` });
+                });
+            }
         }
-        
-        function getLivesDisplay(count) { return "❤️".repeat(Math.max(0, count)) + "🖤".repeat(Math.max(0, 3 - count)); }
 
         function updateWordUI(data) {
-            wordState = data;
-            document.getElementById('currentWord').innerText = data.currentWord;
-            document.getElementById('timer').innerText = data.timer;
-            document.getElementById('livesYusuf').innerText = getLivesDisplay(data.yusufLives);
-            document.getElementById('livesYaren').innerText = getLivesDisplay(data.yarenLives);
-            document.getElementById('statusMessage').innerText = data.status;
-
-            const input = document.getElementById('wordInput');
-            const btn = document.getElementById('sendBtn');
-            const objectionBtn = document.getElementById('objectionBtn');
+            wState = data;
+            document.getElementById('wName1').innerText = data.p1;
+            document.getElementById('wName2').innerText = data.p2;
+            document.getElementById('wLives1').innerText = "❤️".repeat(Math.max(0,data.p1Lives)) + "🖤".repeat(Math.max(0,3-data.p1Lives));
+            document.getElementById('wLives2').innerText = "❤️".repeat(Math.max(0,data.p2Lives)) + "🖤".repeat(Math.max(0,3-data.p2Lives));
             
-            if(data.yusufLives <= 0 || data.yarenLives <= 0) {
-                input.disabled = true; btn.disabled = true; objectionBtn.style.display = 'none';
-                clearInterval(wordCountdown);
-                return;
-            }
+            const board = document.getElementById('wCurrentWord'); board.innerHTML = '';
+            data.word.split('').forEach((letter, index) => {
+                let div = document.createElement('div'); div.className = 'letter-tile drop-bounce';
+                div.style.animationDelay = `${index * 0.1}s`; div.innerText = letter; board.appendChild(div);
+            });
+
+            document.getElementById('wTimer').innerText = data.timer;
+            document.getElementById('wStatus').innerText = data.status;
+
+            const input = document.getElementById('wInput'); const btn = document.getElementById('wSendBtn');
+            if(data.p1Lives <= 0 || data.p2Lives <= 0) { input.disabled = true; btn.disabled = true; clearInterval(wInterval); document.body.classList.remove('panic-mode'); return; }
 
             if(data.turn === myPlayer) {
-                input.disabled = false; btn.disabled = false; objectionBtn.style.display = 'inline-block'; 
-                if(data.timer === 15 || data.timer > 15) startWordTimer(data.timer);
+                input.disabled = false; btn.disabled = false; startWordTimer(data.timer);
             } else {
-                input.disabled = true; btn.disabled = true; objectionBtn.style.display = 'none'; input.value = "";
-                clearInterval(wordCountdown);
+                input.disabled = true; btn.disabled = true; input.value = ''; clearInterval(wInterval); document.body.classList.remove('panic-mode');
+                
+                if(currentMode === 'single' && data.turn === 'SİSTEM') {
+                    setTimeout(() => {
+                        let expected = data.word.slice(-1); let opts = dict[expected] || ['ELMAS'];
+                        let avail = opts.filter(w => !(data.used && data.used[w]));
+                        if(avail.length > 0) {
+                            let w = avail[Math.floor(Math.random()*avail.length)];
+                            let updates = { word: w, turn: myPlayer, timer: 15, status: `Sistem '${w}' yazdı. Sıra sende!` };
+                            updates[`used/${w}`] = true; db.ref(`activeGames/word/${activeRoomId}`).update(updates);
+                        } else { db.ref(`activeGames/word/${activeRoomId}`).update({ p2Lives: 0, status: "SİSTEM KELİME BULAMADI! KAZANDINIZ!" }); }
+                    }, 1500);
+                }
             }
         }
 
-        function startWordTimer(startFrom) {
-            clearInterval(wordCountdown);
-            let timeLeft = startFrom;
-            document.getElementById('timer').innerText = timeLeft;
-            wordCountdown = setInterval(() => {
-                timeLeft--; document.getElementById('timer').innerText = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(wordCountdown);
-                    let nextTurn = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
-                    let lifeRef = myPlayer === "Yusuf" ? "yusufLives" : "yarenLives";
-                    db.ref('game').update({ [lifeRef]: wordState[lifeRef] - 1, turn: nextTurn, timer: 15, status: `❌ Süre bitti! Sıra ${nextTurn}'ta.`});
+        function startWordTimer(time) {
+            clearInterval(wInterval); let t = time;
+            const timerEl = document.getElementById('wTimer'); timerEl.innerText = t;
+            wInterval = setInterval(() => {
+                t--; timerEl.innerText = t;
+                if(t <= 5 && t > 0) { SFX.tick(); document.body.classList.add('panic-mode'); timerEl.classList.add('tick'); setTimeout(() => timerEl.classList.remove('tick'), 200); } 
+                else { document.body.classList.remove('panic-mode'); }
+                if(t <= 0) {
+                    SFX.wrong(); clearInterval(wInterval);
+                    let opp = (currentMode==='single') ? 'SİSTEM' : (myPlayer === wState.p1 ? wState.p2 : wState.p1);
+                    let lifeRef = myPlayer === wState.p1 ? 'p1Lives' : 'p2Lives';
+                    db.ref(`activeGames/word/${activeRoomId}`).update({ [lifeRef]: wState[lifeRef]-1, turn: opp, timer: 15, status: `Süre Bitti! Sıra ${opp}'ta.` });
                 }
             }, 1000);
         }
 
         function sendWord() {
-            const input = document.getElementById('wordInput');
-            const word = input.value.trim().toUpperCase();
-            const expectedLetter = document.getElementById('currentWord').innerText.slice(-1);
-
-            if(!word.startsWith(expectedLetter) || word.length < 2) { 
-                input.classList.add('error-shake');
-                setTimeout(() => input.classList.remove('error-shake'), 400);
-                input.value = ""; return; 
+            const input = document.getElementById('wInput'); const word = input.value.trim().toUpperCase();
+            const expected = wState.word.slice(-1);
+            if(!word.startsWith(expected) || word.length < 2 || (wState.used && wState.used[word])) {
+                SFX.wrong(); input.classList.add('error-shake'); setTimeout(() => input.classList.remove('error-shake'), 400); input.value = ""; return;
             }
-            if(wordState.usedWords && wordState.usedWords[word]) { 
-                input.classList.add('error-shake');
-                setTimeout(() => input.classList.remove('error-shake'), 400);
-                input.value = ""; alert("Bu kelime daha önce kullanıldı!"); return; 
-            }
-
-            clearInterval(wordCountdown);
-            input.value = "";
-            let nextTurn = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
-            
-            const updates = { currentWord: word, turn: nextTurn, timer: 15, status: `⚡ Sıra ${nextTurn}'ta (${word.slice(-1)})` };
-            updates[`usedWords/${word}`] = true;
-            db.ref('game').update(updates);
-        }
-
-        function objectWord() {
-            const opponent = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
-            const oppLifeRef = opponent === "Yusuf" ? "yusufLives" : "yarenLives";
-            db.ref('game').update({ [oppLifeRef]: wordState[oppLifeRef] - 1, currentWord: `CEZA 🔀 A`, timer: 15, status: `🚨 İtiraz başarılı!` });
+            SFX.correct(); clearInterval(wInterval); input.value = ""; document.body.classList.remove('panic-mode');
+            let opp = (currentMode==='single') ? 'SİSTEM' : (myPlayer === wState.p1 ? wState.p2 : wState.p1);
+            const updates = { word: word, turn: opp, timer: 15, status: `Sıra ${opp}'ta.` };
+            updates[`used/${word}`] = true; db.ref(`activeGames/word/${activeRoomId}`).update(updates);
         }
 
         function useWordJoker(type) {
-            if (type === 'time') {
-                db.ref('game/timer').set(parseInt(document.getElementById('timer').innerText) + 10);
-                db.ref(`game/jokers/${myPlayer}/time`).set(false);
+            if(wState.turn !== myPlayer) return;
+            if(type === 'time') { SFX.correct(); db.ref(`activeGames/word/${activeRoomId}/timer`).set(parseInt(document.getElementById('wTimer').innerText) + 10); }
+            if(type === 'hint') {
+                let opts = dict[wState.word.slice(-1)] || ['ELMAS'];
+                let avail = opts.filter(w => !(wState.used && wState.used[w]));
+                if(avail.length > 0) document.getElementById('wInput').value = avail[Math.floor(Math.random()*avail.length)];
             }
+        }
+
+        // --- 6. MİLYONER OYUNU LOGIC ---
+        const mQs = [
+            { q: "Hangisi Zonguldak'ın Karadeniz kıyısında yer alan meşhur ilçesidir?", opts: ["Alaplı", "Kozlu", "Ereğli", "Çaycuma"], ans: 2, p: "500 ₺" },
+            { q: "Ev yapımı çıtır tavuk hazırlarken, hamuru sarmak için genelde hangisi KULLANILMAZ?", opts: ["Un", "Yumurta", "Yufka", "Galeta Unu"], ans: 2, p: "1.000 ₺" },
+            { q: "Mobile Legends oyununda, zırh kırma yeteneğiyle bilinen dövüşçü kahraman kimdir?", opts: ["Alucard", "Dyrroth", "Brody", "Chou"], ans: 1, p: "2.000 ₺" },
+            { q: "Arduino projelerinde sıcaklık ölçmek için kullanılan sensör nedir?", opts: ["HC-SR04", "LM35", "PIR", "DHT11"], ans: 3, p: "3.000 ₺" },
+            { q: "Dijital elektronikte hangisi temel mantık kapılarından biri DEĞİLDİR?", opts: ["NAND", "MAYBE", "NOR", "AND"], ans: 1, p: "5.000 ₺" },
+            { q: "Su, şeker, süt ve fıstıkla yoğrulan yöresel tatlının adı nedir?", opts: ["Kazandibi", "Cennet Çamuru", "Sütlaç", "Keşkül"], ans: 1, p: "7.500 ₺" },
+            { q: "2 Mart tarihinde doğan birinin burcu nedir?", opts: ["Kova", "Balık", "Koç", "Boğa"], ans: 1, p: "15.000 ₺" },
+            { q: "Dacia Dokker Lodgy aracın içeriden ayarlanan ayna sistemine ne ad verilir?", opts: ["Elektrikli", "Otomatik", "Mekanik", "Sensörlü"], ans: 2, p: "30.000 ₺" },
+            { q: "Türkiye'de ücret karşılığı yapılan 1 aylık askerlik hizmetine ne ad verilir?", opts: ["Dövizli", "Yoklama", "Bedelli", "Yedek Subay"], ans: 2, p: "60.000 ₺" },
+            { q: "Hangi dil mobil cihazlarda otomasyon scriptleri için sıkça kullanılır?", opts: ["HTML", "Python", "CSS", "SQL"], ans: 1, p: "125.000 ₺" },
+            { q: "Duino-Coin madenciliği için genellikle hangi platform sunucuları kullanılır?", opts: ["Instagram", "WhatsApp", "GitHub Actions", "Netflix"], ans: 2, p: "250.000 ₺" },
+            { q: "Elektrik panosunda devreyi aşırı akıma karşı koruyan sistem nedir?", opts: ["Röle", "Şalter (Kısa Devre)", "Kontaktör", "Kondansatör"], ans: 1, p: "1.000.000 ₺" }
+        ];
+
+        let mState = {};
+        function initMilyoner() {
+            const gameRef = db.ref(`activeGames/milyoner/${activeRoomId}`);
+            gameRef.on('value', snap => { 
+                let data = snap.val(); if(!data) { leaveLobby(); return; } updateMilUI(data); 
+            });
+        }
+
+        function resetMilyoner() {
+            const gameRef = db.ref(`activeGames/milyoner/${activeRoomId}`);
+            if(currentMode === 'single') {
+                gameRef.set({ p1: myPlayer, p2: "BİLGİSAYAR", qIdx: 0, turn: myPlayer, over: false, status: "Hedef: 1 Milyon TL.", j: { f: true, p: true, a: true }, selecting: false });
+            } else {
+                gameRef.once('value', snap => {
+                    let d = snap.val(); if(d) gameRef.set({ p1: d.p1, p2: d.p2, qIdx: 0, turn: d.p1, over: false, status: "Ortak Hedef: 1 Milyon TL.", j: { f: true, p: true, a: true }, selecting: false });
+                });
+            }
+        }
+
+        function updateMilUI(data) {
+            mState = data; const q = mQs[data.qIdx];
+            document.getElementById('mName1').innerText = data.p1;
+            document.getElementById('mName2').innerText = data.p2;
+            document.getElementById('mPrize').innerText = q ? q.p : "1.000.000 ₺ !";
+            document.getElementById('mPrize').style.transform = "scale(1.1)"; setTimeout(()=> document.getElementById('mPrize').style.transform = "scale(1)", 300);
+            document.getElementById('mQuestionNum').innerText = `Soru: ${data.qIdx + 1}/12`;
+            
+            document.getElementById('mJoker50').className = `joker-pill ${data.j.f ? '' : 'used'}`;
+            document.getElementById('mJokerPhone').className = `joker-pill ${data.j.p ? '' : 'used'}`;
+            document.getElementById('mJokerAudience').className = `joker-pill ${data.j.a ? '' : 'used'}`;
+            
+            if(data.selecting !== false && data.selecting !== undefined && !data.over) {
+                document.getElementById('mOpt'+data.selecting).className = "mil-option-btn pending";
+                document.getElementById('mStatus').innerText = "Karar veriliyor...";
+                for(let i=0; i<4; i++) document.getElementById('mOpt'+i).disabled = true;
+                return;
+            }
+            if(data.over || !q) {
+                document.getElementById('mQuestionText').innerText = data.over ? "OYUN BİTTİ!" : "TEBRİKLER! KAZANDINIZ!";
+                document.getElementById('mStatus').innerText = data.status;
+                for(let i=0; i<4; i++) document.getElementById('mOpt'+i).disabled = true; return;
+            }
+
+            document.getElementById('mQuestionText').innerText = q.q; document.getElementById('mStatus').innerText = data.status;
+            const isMe = data.turn === myPlayer;
+            document.getElementById('mTurn').innerText = `Sıra: ${data.turn.toUpperCase()}`;
+            document.getElementById('mTurn').style.color = isMe ? "var(--success)" : "var(--danger)";
+
+            for(let i=0; i<4; i++) {
+                const btn = document.getElementById('mOpt'+i); document.getElementById('mText'+i).innerText = q.opts[i];
+                btn.className = `mil-option-btn slide-in-${i+1}`; btn.disabled = !isMe; btn.style.visibility = 'visible';
+            }
+        }
+
+        function selectMilOption(idx) {
+            if(mState.turn !== myPlayer || mState.over || mState.selecting !== false) return;
+            const q = mQs[mState.qIdx]; SFX.suspense(); db.ref(`activeGames/milyoner/${activeRoomId}/selecting`).set(idx);
+            
+            setTimeout(() => {
+                if(idx === q.ans) {
+                    SFX.correct(); document.getElementById('mOpt'+idx).className = "mil-option-btn correct";
+                    setTimeout(() => {
+                        let opp = (currentMode === 'single') ? myPlayer : (myPlayer === mState.p1 ? mState.p2 : mState.p1);
+                        db.ref(`activeGames/milyoner/${activeRoomId}`).update({ qIdx: mState.qIdx + 1, turn: opp, status: `Doğru! Sıra ${opp}'ta.`, selecting: false });
+                    }, 2000);
+                } else {
+                    SFX.wrong(); document.getElementById('mOpt'+idx).className = "mil-option-btn wrong"; document.getElementById('mOpt'+q.ans).className = "mil-option-btn correct";
+                    setTimeout(() => { db.ref(`activeGames/milyoner/${activeRoomId}`).update({ over: true, status: `YANLIŞ! Oyun bitti.`, selecting: false }); }, 2000);
+                }
+            }, 2000);
+        }
+
+        function useMilJoker(type) {
+            if(mState.turn !== myPlayer || mState.over || mState.selecting !== false) return;
+            const q = mQs[mState.qIdx]; SFX.correct();
+            if(type === 'fifty' && mState.j.f) { let rem = 0; for(let i=0; i<4; i++) { if(i !== q.ans && rem < 2) { document.getElementById('mOpt'+i).style.visibility = 'hidden'; rem++; } } db.ref(`activeGames/milyoner/${activeRoomId}/j/f`).set(false); }
+            if(type === 'phone' && mState.j.p) { db.ref(`activeGames/milyoner/${activeRoomId}/j/p`).set(false); db.ref(`activeGames/milyoner/${activeRoomId}/status`).set(`☎ "Cevap büyük ihtimalle ${['A','B','C','D'][q.ans]}"`); }
+            if(type === 'audience' && mState.j.a) { db.ref(`activeGames/milyoner/${activeRoomId}/j/a`).set(false); db.ref(`activeGames/milyoner/${activeRoomId}/status`).set(`👥 Seyirci: %85'i ${['A','B','C','D'][q.ans]} dedi.`); }
         }
     </script>
 </body>
