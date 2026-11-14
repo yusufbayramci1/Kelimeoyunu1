@@ -3,46 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Seri Bağlantı</title>
+    <title>Oyun Odası Pro</title>
+    
+    <!-- Modern Font ve Kütüphaneler -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+    
     <style>
-        :root { --bg: #121212; --surface: #1e1e1e; --primary: #0a84ff; --danger: #ff453a; --text: #f5f5f7; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; height: 100vh; box-sizing: border-box; overscroll-behavior: none; }
-        h1 { font-size: 24px; margin-bottom: 10px; text-align: center; }
-        .board { background: var(--surface); width: 100%; max-width: 400px; padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center; }
-        .word-display { font-size: 32px; font-weight: bold; letter-spacing: 2px; color: var(--primary); margin: 20px 0; min-height: 40px; }
-        .timer { font-size: 48px; font-weight: 800; color: var(--danger); margin: 15px 0; }
-        input { width: 90%; padding: 15px; font-size: 18px; border-radius: 12px; border: none; outline: none; text-align: center; text-transform: uppercase; font-weight: bold; background: #2c2c2e; color: white; margin-bottom: 15px; }
-        button { width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary); color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:active { transform: scale(0.96); }
-        .stats { display: flex; justify-content: space-between; margin-top: 20px; font-size: 14px; color: #8e8e93; }
-        .status { margin-top: 15px; font-size: 14px; color: #ff9f0a; font-weight: bold; min-height: 20px; }
+        :root { 
+            --primary: #00d2ff; --primary-dark: #3a7bd5; 
+            --danger: #ff416c; --danger-dark: #ff4b2b;
+            --success: #00b09b; --success-dark: #96c93d;
+            --joker: #fbd786; --joker-dark: #f7797d;
+            --mil-gold: #e6c27a; --mil-dark: #141e30;
+            --text: #ffffff;
+        }
+
+        /* Hareketli Arka Plan Animasyonu */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364, #141e30);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text); margin: 0; padding: 15px; 
+            display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; box-sizing: border-box; overscroll-behavior: none; 
+        }
+
+        h1 { font-size: 28px; margin-bottom: 5px; text-align: center; background: -webkit-linear-gradient(var(--primary), #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(0, 210, 255, 0.4); }
+        .subtitle { font-size: 13px; color: #b0bec5; margin-bottom: 20px; text-align: center; font-weight: 600; letter-spacing: 1px; }
+        
+        /* Glassmorphism (Cam Efekti) Paneller */
+        .board { 
+            background: rgba(15, 23, 42, 0.6); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            width: 100%; max-width: 400px; padding: 25px 20px; 
+            border-radius: 20px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); 
+            text-align: center; margin-bottom: 15px; display: none; 
+        }
+
+        /* Yumuşak Ekran Geçiş Animasyonu */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.39, 0.57, 0.56, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        /* Modern Buton Tasarımları */
+        button { 
+            width: 100%; padding: 16px; border-radius: 14px; border: none; 
+            background: linear-gradient(45deg, var(--primary-dark), var(--primary)); 
+            color: white; font-size: 16px; font-weight: 800; letter-spacing: 1px;
+            cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px; 
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); text-transform: uppercase;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 210, 255, 0.5); }
+        button:active { transform: scale(0.95); }
+        button:disabled { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); box-shadow: none; transform: none; cursor: not-allowed; }
+        
+        .btn-yaren { background: linear-gradient(45deg, var(--danger-dark), var(--danger)); box-shadow: 0 4px 15px rgba(255, 65, 108, 0.3); }
+        .btn-yaren:hover { box-shadow: 0 8px 20px rgba(255, 65, 108, 0.5); }
+        
+        .btn-menu { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); box-shadow: none; font-size: 14px; }
+        .btn-menu:hover { background: rgba(255,255,255,0.1); }
+
+        /* Sesli Sohbet Butonu Efekti */
+        #voiceBtn { background: linear-gradient(45deg, #8E2DE2, #4A00E0); box-shadow: 0 4px 15px rgba(138, 45, 226, 0.4); }
+        #voiceBtn.active { background: linear-gradient(45deg, var(--success-dark), var(--success)); animation: pulseVoice 2s infinite; }
+        @keyframes pulseVoice { 0% { box-shadow: 0 0 0 0 rgba(0, 176, 155, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(0, 176, 155, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 176, 155, 0); } }
+
+        /* Kelime Oyunu Özelleştirmeleri */
+        .player-stats { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 15px; font-weight: 800; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 12px; }
+        .lives { color: var(--danger); font-size: 18px; letter-spacing: 2px; filter: drop-shadow(0 0 5px rgba(255,65,108,0.5)); }
+        
+        .word-display { font-size: 38px; font-weight: 900; letter-spacing: 3px; background: -webkit-linear-gradient(var(--success), #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 15px 0; min-height: 50px; text-shadow: 0 0 20px rgba(0, 176, 155, 0.4); }
+        .timer { font-size: 55px; font-weight: 900; background: -webkit-linear-gradient(var(--danger), #ffffff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 10px 0; filter: drop-shadow(0 0 10px rgba(255, 65, 108, 0.5)); }
+        
+        input { width: 85%; padding: 18px; font-size: 22px; border-radius: 14px; border: 2px solid rgba(255,255,255,0.1); outline: none; text-align: center; text-transform: uppercase; font-weight: 800; background: rgba(0,0,0,0.3); color: white; margin-bottom: 15px; transition: all 0.3s; font-family: 'Poppins', sans-serif; letter-spacing: 2px; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 15px rgba(0, 210, 255, 0.3); background: rgba(0, 210, 255, 0.05); }
+        
+        .jokers { display: flex; gap: 10px; justify-content: space-between; margin-top: 15px; }
+        .btn-joker { flex: 1; background: linear-gradient(45deg, var(--joker-dark), var(--joker)); color: #111; font-size: 13px; font-weight: 800; padding: 12px 5px; box-shadow: 0 4px 10px rgba(247, 121, 125, 0.3); border-radius: 10px; }
+        
+        .btn-objection { background: linear-gradient(45deg, #b20a2c, #fffbd5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; border: 2px solid #b20a2c; display: none; background-color: rgba(178, 10, 44, 0.1); animation: pulseAlert 1.5s infinite; }
+        
+        /* Milyoner Oyunu Özelleştirmeleri */
+        .mil-board { background: linear-gradient(135deg, rgba(20,30,48,0.9), rgba(36,59,85,0.9)); border: 1px solid rgba(230, 194, 122, 0.3); box-shadow: 0 0 30px rgba(230, 194, 122, 0.1); }
+        .mil-prize { font-size: 32px; color: var(--mil-gold); font-weight: 900; margin: 15px 0; text-shadow: 0 0 15px rgba(230, 194, 122, 0.6); letter-spacing: 2px; }
+        .mil-question { background: rgba(0, 0, 0, 0.5); border: 2px solid var(--mil-gold); padding: 20px 15px; border-radius: 16px; font-size: 16px; font-weight: 600; min-height: 70px; display: flex; align-items: center; justify-content: center; margin-bottom: 25px; box-shadow: inset 0 0 20px rgba(230, 194, 122, 0.1); line-height: 1.4; }
+        .mil-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .mil-option { background: rgba(0,0,0,0.6); border: 1px solid rgba(230, 194, 122, 0.5); border-radius: 12px; padding: 15px 10px 15px 40px; font-size: 14px; color: white; cursor: pointer; transition: all 0.3s; position: relative; text-align: left; font-weight: 600; text-transform: none; box-shadow: none; letter-spacing: 0; }
+        .mil-option::before { content: attr(data-letter) ": "; position: absolute; left: 15px; color: var(--mil-gold); font-weight: 900; }
+        .mil-option:hover:not(:disabled) { background: rgba(230, 194, 122, 0.2); border-color: var(--mil-gold); transform: translateY(-2px); }
+        .mil-option.correct { background: linear-gradient(45deg, var(--success-dark), var(--success)); border-color: white; color: white; box-shadow: 0 0 15px rgba(0, 176, 155, 0.5); }
+        .mil-option.wrong { background: linear-gradient(45deg, var(--danger-dark), var(--danger)); border-color: white; color: white; box-shadow: 0 0 15px rgba(255, 65, 108, 0.5); }
+        .mil-option.disabled { opacity: 0; pointer-events: none; }
+        .mil-jokers { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .mil-joker-btn { width: 55px; height: 40px; border-radius: 12px; background: rgba(230, 194, 122, 0.1); border: 1px solid var(--mil-gold); color: var(--mil-gold); font-size: 16px; font-weight: 800; padding: 0; transition: 0.3s; }
+        .mil-joker-btn:hover:not(.used) { background: var(--mil-gold); color: black; box-shadow: 0 0 15px rgba(230, 194, 122, 0.5); transform: translateY(-3px); }
+        .mil-joker-btn.used { text-decoration: line-through; opacity: 0.3; border-color: gray; color: gray; pointer-events: none; }
+
+        .status { margin-top: 20px; font-size: 15px; color: var(--joker); font-weight: 800; min-height: 20px; letter-spacing: 0.5px; }
+        
+        /* Animasyonlar */
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        @keyframes pulseAlert { 0% { box-shadow: 0 0 0 0 rgba(178, 10, 44, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(178, 10, 44, 0); } 100% { box-shadow: 0 0 0 0 rgba(178, 10, 44, 0); } }
+        .error-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; border-color: var(--danger) !important; background: rgba(255, 65, 108, 0.1); }
     </style>
 </head>
 <body>
 
-    <h1>Seri Bağlantı</h1>
-    
-    <div class="board" id="loginBoard">
-        <p>Oyuna giriş yap:</p>
-        <button onclick="joinGame('Yusuf')" style="margin-bottom:10px;">Yusuf Olarak Katıl</button>
-        <button onclick="joinGame('Yaren')" style="background:#ff375f;">Yaren Olarak Katıl</button>
+    <h1>🎮 Oyun Odası Pro</h1>
+    <div class="subtitle" id="playerTag">GİRİŞ BEKLENİYOR...</div>
+
+    <audio id="remoteAudio" autoplay playsinline></audio>
+
+    <!-- ANA MENÜ LOBİSİ -->
+    <div class="board fade-in" id="hubBoard" style="display: block;">
+        <p style="font-weight: 800; margin-bottom: 15px; font-size: 18px;">Kim Olarak Oynuyorsun?</p>
+        <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+            <button onclick="setPlayer('Yusuf')" id="btnYusuf">👦🏻 Yusuf</button>
+            <button onclick="setPlayer('Yaren')" class="btn-yaren" id="btnYaren">👧🏻 Yaren</button>
+        </div>
+        
+        <div id="gameControls" style="display: none; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
+            <button id="voiceBtn" onclick="startVoiceChat()">🎤 Sesli Sohbeti Başlat</button>
+            
+            <p style="font-weight: 800; color: var(--primary); margin-top: 25px; margin-bottom: 15px; font-size: 14px; letter-spacing: 1px;">OYUN MODUNU SEÇ</p>
+            <button onclick="enterGame('word')">🔤 Seri Bağlantı (Kelime)</button>
+            <button onclick="enterGame('milyoner')" style="background: linear-gradient(45deg, #e6c27a, #c5a059); color: #141e30; box-shadow: 0 4px 15px rgba(230, 194, 122, 0.3);">💰 Ortak Kasa Milyoner</button>
+        </div>
     </div>
 
-    <div class="board" id="gameBoard" style="display: none;">
-        <div class="stats">
-            <span id="playerYusuf">Yusuf Ceza: 0 (Güç: 2)</span>
-            <span id="playerYaren">Yaren Ceza: 0 (Güç: 2)</span>
+    <!-- KELİME OYUNU EKRANI -->
+    <div class="board fade-in" id="wordGameBoard">
+        <div class="player-stats">
+            <div>YUSUF<br><span id="livesYusuf" class="lives">❤️❤️❤️</span></div>
+            <div style="text-align: right;">YAREN<br><span id="livesYaren" class="lives">❤️❤️❤️</span></div>
         </div>
-        <div class="timer" id="timer">10</div>
+        <div class="timer" id="timer">15</div>
         <div class="word-display" id="currentWord">BAŞLA</div>
         <input type="text" id="wordInput" placeholder="KELİME YAZ..." autocomplete="off">
-        <button onclick="sendWord()">GÖNDER</button>
+        <button id="sendBtn" onclick="sendWord()">GÖNDER 🚀</button>
+        <button id="objectionBtn" class="btn-objection" onclick="objectWord()">🚨 İTİRAZ ET (Özel İsim!)</button>
+        
+        <div class="jokers">
+            <button id="jokerHint" class="btn-joker" onclick="useWordJoker('hint')">💡 İpucu</button>
+            <button id="jokerTime" class="btn-joker" onclick="useWordJoker('time')">⏳ +10 Sn</button>
+            <button id="jokerChange" class="btn-joker" onclick="useWordJoker('change')">🔀 Değiştir</button>
+        </div>
         <div class="status" id="statusMessage">Rakip bekleniyor...</div>
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button onclick="goToHub()" class="btn-menu">⬅ Lobi</button>
+            <button onclick="resetWordGame()" class="btn-menu">🔄 Sıfırla</button>
+        </div>
+    </div>
+
+    <!-- MİLYONER OYUNU EKRANI -->
+    <div class="board mil-board fade-in" id="milyonerBoard">
+        <div class="mil-jokers">
+            <button class="mil-joker-btn" id="milJoker50" onclick="useMilJoker('fifty')">%50</button>
+            <button class="mil-joker-btn" id="milJokerPhone" onclick="useMilJoker('phone')">☎</button>
+            <button class="mil-joker-btn" id="milJokerAudience" onclick="useMilJoker('audience')">👥</button>
+        </div>
+        
+        <div class="player-stats" style="color: white; margin-bottom: 5px; background: transparent; padding: 0;">
+            <span id="milTurnText" style="color: var(--mil-gold); font-size: 16px;">Sıra: Bekleniyor...</span>
+            <span id="milQuestionNumber" style="color: rgba(255,255,255,0.7);">Soru: 1/12</span>
+        </div>
+        
+        <div class="mil-prize" id="milPrizeText">500 ₺</div>
+        <div class="mil-question" id="milQuestionText">Soru Yükleniyor...</div>
+        
+        <div class="mil-options">
+            <button class="mil-option" data-letter="A" id="milOpt0" onclick="selectMilOption(0)">-</button>
+            <button class="mil-option" data-letter="B" id="milOpt1" onclick="selectMilOption(1)">-</button>
+            <button class="mil-option" data-letter="C" id="milOpt2" onclick="selectMilOption(2)">-</button>
+            <button class="mil-option" data-letter="D" id="milOpt3" onclick="selectMilOption(3)">-</button>
+        </div>
+
+        <div class="status" id="milStatusMessage" style="color: white;"></div>
+        <div style="display: flex; gap: 10px; margin-top: 25px;">
+            <button onclick="goToHub()" class="btn-menu">⬅ Lobi</button>
+            <button onclick="resetMilyoner()" class="btn-menu" style="border-color: var(--mil-gold); color: var(--mil-gold);">🔄 Baştan Başla</button>
+        </div>
     </div>
 
     <script>
+        // FIREBASE BAĞLANTISI
         const firebaseConfig = {
             apiKey: "AIzaSyCV8vsi4zIZbMQyBqyrbnu6liJkyTk_rcI",
             authDomain: "kelimeoyunu-9c9c2.firebaseapp.com",
@@ -52,86 +206,307 @@
             messagingSenderId: "1081194409058",
             appId: "1:1081194409058:web:2abf3c249fc3f66d31b53b"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let myPlayer = "";
-        let countdown;
 
-        function joinGame(player) {
+        // LOBİ SİSTEMİ
+        function setPlayer(player) {
             myPlayer = player;
-            document.getElementById('loginBoard').style.display = 'none';
-            document.getElementById('gameBoard').style.display = 'block';
-            
-            db.ref('game').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if(!data) {
-                    db.ref('game').set({
-                        currentWord: "REKABET", turn: "Yusuf", timer: 10,
-                        yusufPenalty: 0, yarenPenalty: 0, 
-                        status: "Sıra Yusuf'ta (T ile başla)"
+            document.getElementById('playerTag').innerText = "Aktif Oyuncu: " + player.toUpperCase();
+            document.getElementById('playerTag').style.color = player === 'Yusuf' ? 'var(--primary)' : 'var(--danger)';
+            document.getElementById('btnYusuf').style.opacity = player === 'Yusuf' ? '1' : '0.3';
+            document.getElementById('btnYaren').style.opacity = player === 'Yaren' ? '1' : '0.3';
+            document.getElementById('gameControls').style.display = 'block';
+        }
+
+        function showScreen(screenId) {
+            ['hubBoard', 'wordGameBoard', 'milyonerBoard'].forEach(id => {
+                const el = document.getElementById(id);
+                el.style.display = 'none';
+                el.classList.remove('fade-in');
+            });
+            const target = document.getElementById(screenId);
+            target.style.display = 'block';
+            // Trigger reflow to restart animation
+            void target.offsetWidth;
+            target.classList.add('fade-in');
+        }
+
+        function goToHub() {
+            showScreen('hubBoard');
+            clearInterval(wordCountdown);
+        }
+
+        function enterGame(game) {
+            if(game === 'word') {
+                showScreen('wordGameBoard');
+                initWordGame();
+            } else if(game === 'milyoner') {
+                showScreen('milyonerBoard');
+                initMilyoner();
+            }
+        }
+
+        // SESLİ SOHBET (WEBRTC) SİSTEMİ
+        let peer; let voiceActive = false;
+        async function startVoiceChat() {
+            if (voiceActive) return;
+            const btn = document.getElementById('voiceBtn');
+            btn.innerText = "⏳ Mikrofon İzni Bekleniyor...";
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                btn.innerText = "🎤 Sesli Sohbet Aktif (Bağlanıyor...)";
+                btn.classList.add('active');
+                voiceActive = true;
+
+                const myPeerId = `oyunodasi-yusufyaren2026-${myPlayer}`;
+                const opponentId = `oyunodasi-yusufyaren2026-${myPlayer === 'Yusuf' ? 'Yaren' : 'Yusuf'}`;
+                peer = new Peer(myPeerId);
+
+                peer.on('open', (id) => {
+                    btn.innerText = "🎤 Sesli Sohbet Aktif (Dinleniyor)";
+                    const call = peer.call(opponentId, stream);
+                    if (call) {
+                        call.on('stream', (remoteStream) => {
+                            document.getElementById('remoteAudio').srcObject = remoteStream;
+                            btn.innerText = myPlayer === 'Yusuf' ? "🎤 Yaren'le Konuşuyorsun" : "🎤 Yusuf'la Konuşuyorsun";
+                        });
+                    }
+                });
+
+                peer.on('call', (call) => {
+                    call.answer(stream);
+                    call.on('stream', (remoteStream) => {
+                        document.getElementById('remoteAudio').srcObject = remoteStream;
+                        btn.innerText = myPlayer === 'Yusuf' ? "🎤 Yaren'le Konuşuyorsun" : "🎤 Yusuf'la Konuşuyorsun";
                     });
-                } else {
-                    updateUI(data);
-                }
+                });
+            } catch (err) {
+                alert("Mikrofon izni reddedildi. Sesli sohbet için ayarlardan mikrofona izin vermelisin.");
+                btn.innerText = "❌ Mikrofon Hatası";
+                voiceActive = false;
+            }
+        }
+
+        // MİLYONER OYUNU
+        const milQuestions = [
+            { q: "Hangisi Zonguldak'ın Karadeniz kıyısında yer alan meşhur ilçesidir?", opts: ["Alaplı", "Kozlu", "Ereğli", "Çaycuma"], ans: 2, prize: "500 ₺" },
+            { q: "Ev yapımı çıtır tavuk hazırlarken, hamuru sarmak için genelde hangisi KULLANILMAZ?", opts: ["Un", "Yumurta", "Yufka", "Galeta Unu"], ans: 2, prize: "1.000 ₺" },
+            { q: "Mobile Legends oyununda, zırh kırma yeteneğiyle bilinen ve Abis gücünü kullanan kahraman kimdir?", opts: ["Alucard", "Dyrroth", "Brody", "Chou"], ans: 1, prize: "2.000 ₺" },
+            { q: "Arduino projelerinde, ortamın sıcaklık ve nemini ölçmek için sıklıkla kullanılan mavi renkli sensörün adı nedir?", opts: ["HC-SR04", "LM35", "PIR", "DHT11"], ans: 3, prize: "3.000 ₺" },
+            { q: "Dijital elektronikte (Proteus/ARES) hangisi temel mantık kapılarından biri DEĞİLDİR?", opts: ["NAND", "MAYBE", "NOR", "AND"], ans: 1, prize: "5.000 ₺" },
+            { q: "Su, şeker, süt ve fıstıkla yoğrulan meşhur yöresel tatlının adı nedir?", opts: ["Kazandibi", "Cennet Çamuru", "Sütlaç", "Keşkül"], ans: 1, prize: "7.500 ₺" },
+            { q: "Astrolojiye göre, 2 Mart tarihinde doğan birinin burcu nedir?", opts: ["Kova", "Balık", "Koç", "Boğa"], ans: 1, prize: "15.000 ₺" },
+            { q: "Bir Dacia Dokker Lodgy aracın, elle içeriden ayarlanan ayna camı sistemine teknik olarak ne ad verilir?", opts: ["Elektrikli", "Otomatik", "Mekanik", "Sensörlü"], ans: 2, prize: "30.000 ₺" },
+            { q: "Türkiye'de genellikle 1 ay süren ve ücret karşılığı yapılan askerlik hizmetine ne ad verilir?", opts: ["Dövizli", "Yoklama", "Bedelli", "Yedek Subaylık"], ans: 2, prize: "60.000 ₺" },
+            { q: "Hangi yazılım dili, mobil cihazlarda otomasyon scriptleri çalıştırmak için sıkça kullanılır?", opts: ["HTML", "Python", "CSS", "SQL"], ans: 1, prize: "125.000 ₺" },
+            { q: "Duino-Coin ağı üzerinde madencilik yapmak için genellikle hangi platformun sunucuları kullanılır?", opts: ["Instagram", "WhatsApp", "GitHub Actions", "Netflix"], ans: 2, prize: "250.000 ₺" },
+            { q: "Elektrik pano tasarımında, devreyi aşırı akıma karşı koruyan sisteme ne ad verilir?", opts: ["Röle", "Kısa Devre (Şalter)", "Kontaktör", "Kondansatör"], ans: 1, prize: "1.000.000 ₺" }
+        ];
+
+        let milState = {};
+        function initMilyoner() {
+            db.ref('milyoner').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if(!data) resetMilyoner(); else updateMilUI(data);
             });
         }
 
-        function updateUI(data) {
+        function resetMilyoner() {
+            db.ref('milyoner').set({
+                qIndex: 0, turn: "Yusuf", isGameOver: false,
+                status: "🎯 Oyun Başladı! Hedef: 1 Milyon TL.",
+                jokers: { fifty: true, phone: true, audience: true }
+            });
+        }
+
+        function updateMilUI(data) {
+            milState = data;
+            const qData = milQuestions[data.qIndex];
+            
+            document.getElementById('milPrizeText').innerText = qData ? qData.prize : "🏆 1.000.000 ₺ 🏆";
+            document.getElementById('milQuestionNumber').innerText = `Soru: ${data.qIndex + 1}/12`;
+            
+            document.getElementById('milJoker50').className = `mil-joker-btn ${data.jokers.fifty ? '' : 'used'}`;
+            document.getElementById('milJokerPhone').className = `mil-joker-btn ${data.jokers.phone ? '' : 'used'}`;
+            document.getElementById('milJokerAudience').className = `mil-joker-btn ${data.jokers.audience ? '' : 'used'}`;
+            
+            if(data.isGameOver) {
+                document.getElementById('milQuestionText').innerText = "OYUN BİTTİ!";
+                document.getElementById('milStatusMessage').innerText = data.status;
+                for(let i=0; i<4; i++) {
+                    const btn = document.getElementById('milOpt'+i);
+                    btn.innerText = "-"; btn.disabled = true; btn.classList.remove('disabled');
+                }
+                return;
+            }
+
+            if(data.qIndex >= milQuestions.length) {
+                document.getElementById('milQuestionText').innerText = "🎉 MÜKEMMEL UYUM! 1 MİLYON TL KAZANDINIZ! 🎉";
+                return;
+            }
+
+            document.getElementById('milQuestionText').innerText = qData.q;
+            document.getElementById('milStatusMessage').innerText = data.status;
+            
+            const isMyTurn = data.turn === myPlayer;
+            document.getElementById('milTurnText').innerText = `Sıra: ${data.turn.toUpperCase()}`;
+            document.getElementById('milTurnText').style.color = isMyTurn ? "var(--success)" : "var(--danger)";
+
+            for(let i=0; i<4; i++) {
+                const btn = document.getElementById('milOpt'+i);
+                btn.innerText = qData.opts[i];
+                btn.className = "mil-option";
+                btn.disabled = !isMyTurn; 
+            }
+        }
+
+        function selectMilOption(optIndex) {
+            if(milState.turn !== myPlayer || milState.isGameOver) return;
+            const qData = milQuestions[milState.qIndex];
+            const btn = document.getElementById('milOpt'+optIndex);
+            
+            if(optIndex === qData.ans) {
+                btn.classList.add('correct');
+                setTimeout(() => {
+                    const nextTurn = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
+                    db.ref('milyoner').update({ qIndex: milState.qIndex + 1, turn: nextTurn, status: `✨ Harika! ${myPlayer} doğru bildi. Sıra ${nextTurn}'ta.` });
+                }, 1200);
+            } else {
+                btn.classList.add('wrong');
+                document.getElementById('milOpt'+qData.ans).classList.add('correct');
+                setTimeout(() => {
+                    db.ref('milyoner').update({ isGameOver: true, status: `💥 YANLIŞ! ${myPlayer} elendi. İkiniz de kaybettiniz!` });
+                }, 2000);
+            }
+        }
+
+        function useMilJoker(type) {
+            if(milState.turn !== myPlayer || milState.isGameOver || !milState.jokers[type]) return;
+            const qData = milQuestions[milState.qIndex];
+
+            if(type === 'fifty') {
+                let removed = 0;
+                for(let i=0; i<4; i++) {
+                    if(i !== qData.ans && removed < 2) {
+                        document.getElementById('milOpt'+i).classList.add('disabled');
+                        removed++;
+                    }
+                }
+                db.ref('milyoner/jokers/fifty').set(false);
+                db.ref('milyoner/status').set(`💡 ${myPlayer}, %50 Jokerini kullandı.`);
+            } 
+            else if(type === 'phone') {
+                db.ref('milyoner/jokers/phone').set(false);
+                db.ref('milyoner/status').set(`☎ Arama: "Emin değilim ama bence cevap ${['A','B','C','D'][qData.ans]} şıkkı."`);
+            } 
+            else if(type === 'audience') {
+                db.ref('milyoner/jokers/audience').set(false);
+                db.ref('milyoner/status').set(`👥 Seyirci: Seyircilerin %85'i ${['A','B','C','D'][qData.ans]} şıkkını seçti!`);
+            }
+        }
+
+        // KELİME OYUNU
+        let wordCountdown; let wordState = {};
+        
+        function initWordGame() {
+            db.ref('game').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if(!data) resetWordGame(); else updateWordUI(data);
+            });
+        }
+
+        function resetWordGame() {
+            db.ref('game').set({
+                currentWord: "REKABET", turn: "Yusuf", timer: 15,
+                yusufLives: 3, yarenLives: 3, usedWords: { "REKABET": true },
+                jokers: { Yusuf: { hint: true, time: true, change: true }, Yaren: { hint: true, time: true, change: true } },
+                status: "🔥 Oyun başladı! Sıra Yusuf'ta (T ile başla)"
+            });
+        }
+        
+        function getLivesDisplay(count) { return "❤️".repeat(Math.max(0, count)) + "🖤".repeat(Math.max(0, 3 - count)); }
+
+        function updateWordUI(data) {
+            wordState = data;
             document.getElementById('currentWord').innerText = data.currentWord;
             document.getElementById('timer').innerText = data.timer;
-            document.getElementById('playerYusuf').innerText = `Yusuf Ceza: ${data.yusufPenalty} (Güç: 2)`;
-            document.getElementById('playerYaren').innerText = `Yaren Ceza: ${data.yarenPenalty} (Güç: 2)`;
+            document.getElementById('livesYusuf').innerText = getLivesDisplay(data.yusufLives);
+            document.getElementById('livesYaren').innerText = getLivesDisplay(data.yarenLives);
             document.getElementById('statusMessage').innerText = data.status;
 
             const input = document.getElementById('wordInput');
-            if(data.turn === myPlayer && data.yusufPenalty < 5 && data.yarenPenalty < 5) {
-                input.disabled = false;
-                if(data.timer === 10) startLocalTimer();
-            } else {
-                input.disabled = true;
-                clearInterval(countdown);
+            const btn = document.getElementById('sendBtn');
+            const objectionBtn = document.getElementById('objectionBtn');
+            
+            if(data.yusufLives <= 0 || data.yarenLives <= 0) {
+                input.disabled = true; btn.disabled = true; objectionBtn.style.display = 'none';
+                clearInterval(wordCountdown);
+                return;
             }
 
-            if(data.yusufPenalty >= 5) document.getElementById('statusMessage').innerText = "YUSUF KAYBETTI! Ceza: Çikolatalı Islak Kek.";
-            if(data.yarenPenalty >= 5) document.getElementById('statusMessage').innerText = "YAREN KAYBETTI! Ceza: Popeyes Çıtır Tavuk.";
+            if(data.turn === myPlayer) {
+                input.disabled = false; btn.disabled = false; objectionBtn.style.display = 'inline-block'; 
+                if(data.timer === 15 || data.timer > 15) startWordTimer(data.timer);
+            } else {
+                input.disabled = true; btn.disabled = true; objectionBtn.style.display = 'none'; input.value = "";
+                clearInterval(wordCountdown);
+            }
         }
 
-        function startLocalTimer() {
-            clearInterval(countdown);
-            let timeLeft = 10;
-            countdown = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timer').innerText = timeLeft;
+        function startWordTimer(startFrom) {
+            clearInterval(wordCountdown);
+            let timeLeft = startFrom;
+            document.getElementById('timer').innerText = timeLeft;
+            wordCountdown = setInterval(() => {
+                timeLeft--; document.getElementById('timer').innerText = timeLeft;
                 if (timeLeft <= 0) {
-                    clearInterval(countdown);
-                    if(myPlayer === "Yusuf") db.ref('game/yusufPenalty').set(firebase.database.ServerValue.increment(1));
-                    if(myPlayer === "Yaren") db.ref('game/yarenPenalty').set(firebase.database.ServerValue.increment(1));
-                    db.ref('game').update({ turn: myPlayer === "Yusuf" ? "Yaren" : "Yusuf", timer: 10 });
+                    clearInterval(wordCountdown);
+                    let nextTurn = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
+                    let lifeRef = myPlayer === "Yusuf" ? "yusufLives" : "yarenLives";
+                    db.ref('game').update({ [lifeRef]: wordState[lifeRef] - 1, turn: nextTurn, timer: 15, status: `❌ Süre bitti! Sıra ${nextTurn}'ta.`});
                 }
             }, 1000);
         }
 
         function sendWord() {
-            const word = document.getElementById('wordInput').value.trim().toUpperCase();
-            document.getElementById('wordInput').value = "";
-            const current = document.getElementById('currentWord').innerText;
-            const expectedLetter = current.slice(-1);
+            const input = document.getElementById('wordInput');
+            const word = input.value.trim().toUpperCase();
+            const expectedLetter = document.getElementById('currentWord').innerText.slice(-1);
 
-            if(!word.startsWith(expectedLetter)) {
-                alert(`HATA! Kelime ${expectedLetter} ile başlamalı.`);
-                return;
+            if(!word.startsWith(expectedLetter) || word.length < 2) { 
+                input.classList.add('error-shake');
+                setTimeout(() => input.classList.remove('error-shake'), 400);
+                input.value = ""; return; 
+            }
+            if(wordState.usedWords && wordState.usedWords[word]) { 
+                input.classList.add('error-shake');
+                setTimeout(() => input.classList.remove('error-shake'), 400);
+                input.value = ""; alert("Bu kelime daha önce kullanıldı!"); return; 
             }
 
-            clearInterval(countdown);
+            clearInterval(wordCountdown);
+            input.value = "";
             let nextTurn = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
             
-            db.ref('game').update({
-                currentWord: word,
-                turn: nextTurn,
-                timer: 10,
-                status: `Sıra ${nextTurn}'ta (${word.slice(-1)} ile başla)`
-            });
+            const updates = { currentWord: word, turn: nextTurn, timer: 15, status: `⚡ Sıra ${nextTurn}'ta (${word.slice(-1)})` };
+            updates[`usedWords/${word}`] = true;
+            db.ref('game').update(updates);
+        }
+
+        function objectWord() {
+            const opponent = myPlayer === "Yusuf" ? "Yaren" : "Yusuf";
+            const oppLifeRef = opponent === "Yusuf" ? "yusufLives" : "yarenLives";
+            db.ref('game').update({ [oppLifeRef]: wordState[oppLifeRef] - 1, currentWord: `CEZA 🔀 A`, timer: 15, status: `🚨 İtiraz başarılı!` });
+        }
+
+        function useWordJoker(type) {
+            if (type === 'time') {
+                db.ref('game/timer').set(parseInt(document.getElementById('timer').innerText) + 10);
+                db.ref(`game/jokers/${myPlayer}/time`).set(false);
+            }
         }
     </script>
 </body>
