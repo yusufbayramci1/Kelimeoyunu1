@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Oyun Odası - 3D Metaverse V27</title>
+    <title>Oyun Odası - 3D Pro Max Metaverse V29</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -177,9 +177,8 @@
     <!-- GÜVENLİ GİZLİ YÖNETİCİ PANELİ -->
     <div class="url-admin-modal" id="urlAdminModal">
         <h2 style="color: var(--primary); font-weight: 900; margin-bottom: 5px; letter-spacing: 2px;">🛡️ GÜVENLİK & KOMUTA MERKEZİ</h2>
-        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 15px;">Yönetici Erişim Doğrulama ve Stüdyo Kontrol Paneli</p>
+        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 15px;">Canlı Stüdyo ve Oyun Süresi Kontrol Paneli</p>
 
-        <!-- ŞİFRE GİRİŞ EKRANI (Tarayıcı prompt yerine özel mobil uyumlu kutu) -->
         <div id="adminAuthBox" style="max-width: 380px; margin: 40px auto; width: 100%; background: rgba(10,14,28,0.9); border: 2px solid var(--mil-gold); border-radius: 20px; padding: 25px; box-sizing: border-box;">
             <p style="color: var(--mil-gold); font-weight: 900; font-size: 14px; margin-bottom: 12px;">🔐 YÖNETİCİ ŞİFRESİNİ GİRİN</p>
             <input type="password" class="name-input" id="adminLoginPassInput" placeholder="ŞİFRE (VARSAYILAN: 1234)" style="font-size: 14px; text-transform: none; letter-spacing: 3px;">
@@ -187,16 +186,15 @@
             <button class="btn-modern btn-action" onclick="closeUrlAdmin()" style="margin-bottom: 0;">İPTAL ET</button>
         </div>
         
-        <!-- DOĞRULANMIŞ YÖNETİCİ İÇERİĞİ -->
         <div id="adminPanelContent" style="display: none; max-width: 520px; margin: 0 auto; width: 100%; text-align: left;">
             <div class="admin-grid">
                 <div class="admin-stat-card">
-                    <span style="font-size: 10px; color: #94a3b8;">Millî Soru Havuzu</span>
+                    <span style="font-size: 10px; color: #94a3b8;">Canlı Soru Havuzu</span>
                     <div class="admin-stat-num" id="statQCount">12 / 12</div>
                 </div>
                 <div class="admin-stat-card">
-                    <span style="font-size: 10px; color: #94a3b8;">Güvenlik Durumu</span>
-                    <div class="admin-stat-num" style="color: var(--success);">Aktif</div>
+                    <span style="font-size: 10px; color: #94a3b8;">Sistem Modu</span>
+                    <div class="admin-stat-num" style="color: var(--success);">Canlı TDK & AI</div>
                 </div>
             </div>
 
@@ -210,13 +208,13 @@
             </div>
 
             <div class="settings-group" style="border-color: var(--primary);">
-                <p style="color: var(--primary); font-weight: 900; font-size: 12px; margin-bottom: 8px;">📊 GELİŞMİŞ GÜVENLİK VE AI LOGLARI</p>
-                <button class="btn-modern btn-primary" onclick="triggerAIGlobalUpgrade()" style="padding: 10px; font-size: 11px; margin-bottom: 8px;">🚀 YAPAY ZEKA ALGORİTMASINI GÜNCELLE</button>
-                <button class="btn-modern btn-action" onclick="forceAIQuestionRefresh()" style="padding: 10px; font-size: 11px; margin: 0;">🌐 TÜRKÇE YENİ SORU HAVUZUNU YÜKLE</button>
+                <p style="color: var(--primary); font-weight: 900; font-size: 12px; margin-bottom: 8px;">📊 CANLI OYUN VE MÜDAHALE</p>
+                <button class="btn-modern btn-primary" onclick="adminTriggerGlobalLight()" style="padding: 10px; font-size: 11px; margin-bottom: 8px;">💡 STÜDYO IŞIKLARINI PATLAT (PARLAKLIK)</button>
+                <button class="btn-modern btn-action" onclick="forceAIQuestionRefresh()" style="padding: 10px; font-size: 11px; margin: 0;">🌐 TDK SÖZLÜK VE YENİ SORU YÜKLE</button>
 
                 <p style="font-size: 10px; color: #94a3b8; margin: 12px 0 3px 0;">Sistem Denetim Günlüğü:</p>
                 <div class="admin-log-box" id="adminLogBox">
-                    [Sistem]: Güvenlik ve komuta merkezi hazır.<br>
+                    [Sistem]: V29 Pro Max Canlı Motor devrede.<br>
                 </div>
             </div>
 
@@ -255,7 +253,7 @@
         <audio id="remoteAudio" autoplay playsinline></audio>
 
         <div class="screen fade-in" id="hubBoard" style="display: flex;">
-            <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: var(--mil-gold); letter-spacing: 5px;">3D TÜRKÇE METAVERSE V27</span></div>
+            <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: var(--mil-gold); letter-spacing: 5px;">3D PRO MAX V29</span></div>
             
             <div id="loginSection" style="width: 100%;">
                 <input type="text" class="name-input" id="playerNameInput" placeholder="ADINIZI VEYA RUMUZUNUZU YAZIN" autocomplete="off" maxlength="10">
@@ -265,14 +263,14 @@
             <div id="gameMenuSection" style="display: none; width: 100%;">
                 <p class="game-info-text" id="playerTag" style="color: var(--success); font-size: 15px; margin-bottom: 18px;"></p>
                 
-                <p style="font-weight: 800; font-size: 12px; margin-bottom: 8px; color: #94a3b8;">🔤 KELİME OYUNU</p>
+                <p style="font-weight: 800; font-size: 12px; margin-bottom: 8px; color: #94a3b8;">🔤 KELİME OYUNU (TDK Entegreli & Kombo)</p>
                 <div class="game-mode-grid">
                     <div class="mode-card" onclick="openGame('word', 'single')"><span class="mode-title">TEK KİŞİ</span><span class="mode-desc">Bota Karşı</span></div>
                     <div class="mode-card" onclick="openRoomMenu('word')"><span class="mode-title">ÖZEL ODA</span><span class="mode-desc">Şifreli Lobi</span></div>
                     <div class="mode-card" style="border-color: rgba(0, 229, 255, 0.4);" onclick="openGame('word', 'random')"><span class="mode-title">HIZLI MAÇ</span><span class="mode-desc">Rastgele</span></div>
                 </div>
 
-                <p style="font-weight: 800; font-size: 12px; margin-top: 8px; margin-bottom: 8px; color: var(--mil-gold);">💰 KİM MİLYONER OLMAK İSTER</p>
+                <p style="font-weight: 800; font-size: 12px; margin-top: 8px; margin-bottom: 8px; color: var(--mil-gold);">💰 KİM MİLYONER OLMAK İSTER (Kademeli)</p>
                 <div class="game-mode-grid">
                     <div class="mode-card" style="border-color: rgba(243,198,93,0.3);" onclick="openGame('milyoner', 'single')"><span class="mode-title" style="color: var(--mil-gold);">TEK KİŞİ</span><span class="mode-desc">Bota Karşı</span></div>
                     <div class="mode-card" style="border-color: rgba(243,198,93,0.3);" onclick="openRoomMenu('milyoner')"><span class="mode-title" style="color: var(--mil-gold);">ÖZEL ODA</span><span class="mode-desc">Şifreli Lobi</span></div>
@@ -331,7 +329,7 @@
             </div>
             <div class="word-timer" id="wTimer">15</div>
             <div class="tile-board" id="wCurrentWord"></div>
-            <input type="text" class="name-input" id="wInput" placeholder="KELİME YAZIN..." style="margin-bottom: 8px; padding: 12px; font-size: 20px;">
+            <input type="text" class="name-input" id="wInput" placeholder="TDK ONAYLI KELİME YAZIN..." style="margin-bottom: 8px; padding: 12px; font-size: 20px;">
             <button class="btn-modern btn-primary" id="wSendBtn" onclick="sendWord()" style="padding: 14px; margin-bottom: 8px;">GÖNDER</button>
             
             <div class="joker-container">
@@ -371,9 +369,11 @@
                         <div class="joker-pill" id="mJoker50" onclick="useMilJoker('fifty')">%50 Hak</div>
                         <div class="joker-pill" id="mJokerDouble" onclick="useMilJoker('double')" style="border-color: #00e5ff; color: #00e5ff;">✌️ Çift Cevap</div>
                         <div class="joker-pill" id="mJokerAudience" onclick="useMilJoker('audience')">👥 Seyirci Oyu</div>
+                        <div class="joker-pill" id="mJokerPhone" onclick="useMilJoker('phone')" style="border-color: var(--success); color: var(--success);">📞 Telefon</div>
                     </div>
 
                     <div class="mil-question-box" id="mQuestionText">Soru Yükleniyor...</div>
+                    <div id="milTimerText" style="font-size: 12px; font-weight: 800; color: var(--danger); text-align: center; margin-bottom: 5px;">Süre: 30 Saniye</div>
                     
                     <div class="mil-options-grid">
                         <button class="mil-option-btn" id="mOpt0" onclick="selectMilOption(0)"><span class="letter">A</span> <span class="text" id="mText0">-</span></button>
@@ -464,13 +464,10 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- GÜVENLİ URL KONTROLÜ (Hem ?admin=1 hem #1 hem /1 destekler) ---
+        // --- GÜVENLİ URL PARAMETRESİ KONTROLÜ ---
         function checkParamAdmin() {
             const urlParams = new URLSearchParams(window.location.search);
-            const hash = window.location.hash;
-            const path = window.location.pathname;
-            
-            if (urlParams.get('admin') === '1' || hash === '#1' || path.endsWith('/1') || path.endsWith('/1/')) {
+            if (urlParams.get('admin') === '1') {
                 document.getElementById('urlAdminModal').style.display = 'flex';
                 document.getElementById('adminAuthBox').style.display = 'block';
                 document.getElementById('adminPanelContent').style.display = 'none';
@@ -485,7 +482,7 @@
                 document.getElementById('adminAuthBox').style.display = 'none';
                 document.getElementById('adminPanelContent').style.display = 'block';
                 document.getElementById('adminPassInput').value = savedPass;
-                logAdminAction("Yönetici oturumu başarıyla doğrulandı.");
+                logAdminAction("Yönetici oturumu doğrulandı.");
             } else {
                 alert("Hatalı şifre! (Varsayılan: 1234)");
                 document.getElementById('adminLoginPassInput').value = '';
@@ -502,34 +499,35 @@
 
         function closeUrlAdmin() {
             document.getElementById('urlAdminModal').style.display = 'none';
-            window.history.replaceState({}, document.title, window.location.pathname.replace(/\/1\/?$/, '/'));
+            window.location.href = "https://yusufbayramci1.github.io/Kelimeoyunu1/";
         }
 
         window.addEventListener('DOMContentLoaded', () => {
             checkParamAdmin();
             init3D();
+            fetchDynamicQuestions();
         });
-        window.addEventListener('hashchange', checkParamAdmin);
 
         function logAdminAction(text) {
             const box = document.getElementById('adminLogBox');
             if(!box) return;
             const time = new Date().toLocaleTimeString();
-            box.innerHTML += `<br>[${time}] [AI-CORE]: ${text}`;
+            box.innerHTML += `<br>[${time}] [PRO-MAX]: ${text}`;
             box.scrollTop = box.scrollHeight;
         }
 
-        function triggerAIGlobalUpgrade() {
-            logAdminAction("Yapay zeka millî ve kültürel bilgi havuzlarını tarıyor...");
-            setTimeout(() => {
-                logAdminAction("Stüdyo dinamikleri optimize edildi.");
-                alert("Yapay zeka tüm algoritmaları başarıyla güncelledi!");
-            }, 1200);
+        function adminTriggerGlobalLight() {
+            if(spotlight3D) {
+                spotlight3D.intensity = 20;
+                setTimeout(() => spotlight3D.intensity = 8, 1500);
+            }
+            logAdminAction("Stüdyo ışıkları yönetici tarafından parlaklık moduna getirildi!");
+            alert("Stüdyo ışıkları flaş efektiyle patlatıldı!");
         }
 
         function forceAIQuestionRefresh() {
             fetchDynamicQuestions();
-            logAdminAction("Canlı Türkçe soru havuzu güncellendi.");
+            logAdminAction("TDK sözlük ve millî soru havuzu güncellendi.");
         }
 
         let dynamicMilPool = [];
@@ -540,7 +538,7 @@
             { q: "Ege Bölgesi'nin en büyük ili hangisidir?", opts: ["Aydın", "Manisa", "İzmir", "Denizli"], ans: 2, p: "3.000 TL" },
             { q: "Türk musıkisinde 'Sanat Güneşi' olarak anılan usta sanatçı kimdir?", opts: ["Müslüm Gürses", "Zeki Müren", "Barış Manço", "Cem Karaca"], ans: 1, p: "5.000 TL (BARAJ)" },
             { q: "Cumhuriyetimiz hangi yıl ilan edilmiştir?", opts: ["1920", "1922", "1923", "1930"], ans: 2, p: "7.500 TL" },
-            { q: "Dünyanın en uzun nehirlerinden biri olan Fırtına Deresi hangi bölgemizdedir?", opts: ["Akdeniz", "Karadeniz", "İç Anadolu", "Marmara"], ans: 1, p: "15.000 TL" },
+            { q: "Fırtına Deresi hangi coğrafi bölgemizdedir?", opts: ["Akdeniz", "Karadeniz", "İç Anadolu", "Marmara"], ans: 1, p: "15.000 TL" },
             { q: "Nobel Ödülü alan ilk Türk bilim insanımız kimdir?", opts: ["Orhan Pamuk", "Aziz Sancar", "Uğur Şahin", "Oktay Sinanoğlu"], ans: 1, p: "30.000 TL" },
             { q: "Yedi Bela Hüsnü ve Şabanoğlu Şaban filmleriyle tanınan efsanevi yönetmen kimdir?", opts: ["Ertem Eğilmez", "Yılmaz Güney", "Atıf Yılmaz", "Zeki Ökten"], ans: 0, p: "60.000 TL" },
             { q: "İstanbul Boğazı'nı asma köprüyle ilk kez birleştiren yapı hangisidir?", opts: ["Fatih Sultan Mehmet Köprüsü", "15 Temmuz Şehitler Köprüsü", "Yavuz Sultan Selim Köprüsü", "Çanakkale Köprüsü"], ans: 1, p: "125.000 TL (BARAJ)" },
@@ -552,8 +550,37 @@
             dynamicMilPool = [...milliSoruHavuzu].sort(() => Math.random() - 0.5);
             let statCount = document.getElementById('statQCount');
             if(statCount) statCount.innerText = `${dynamicMilPool.length} / 12`;
-            logAdminAction(`Millî ve kültürel ${dynamicMilPool.length} Türkçe soru sisteme yüklendi.`);
         }
+
+        const tdkSozlukHavuzu = {
+            'A': ['ARABA', 'AKŞAM', 'ARMUT', 'ANAHTAR', 'ASKER', 'ANLAM'], 
+            'B': ['BARDAK', 'BALIK', 'BİLGİ', 'BAHÇE', 'BASKIN', 'BAYRAK'],
+            'C': ['CEVİZ', 'CESUR', 'CAMİ', 'CEVAP', 'CILIZ', 'CİHAN'], 
+            'Ç': ['ÇİÇEK', 'ÇANTA', 'ÇOCUK', 'ÇADIR', 'ÇORBA', 'ÇEŞME'],
+            'D': ['DUVAR', 'DÜNYA', 'DOLAP', 'DEMİR', 'DAVUL', 'DENİZ'], 
+            'E': ['ELMA', 'EVREN', 'ENERJİ', 'EKMEK', 'ETİKET', 'ESNAF'],
+            'F': ['FARE', 'FİKİR', 'FIRTINA', 'FISTIK', 'FABRİKA', 'FUTBOL'], 
+            'G': ['GÜNEŞ', 'GEMİ', 'GECE', 'GÖLGE', 'GAZETE', 'GAYRET'],
+            'H': ['HAVA', 'HAYAT', 'HUZUR', 'HESAP', 'HAFIZA', 'HİKMET'], 
+            'I': ['IRMAK', 'IŞIK', 'IZGARA', 'ISLAK', 'ISSIZ', 'IRGAT'],
+            'İ': ['İNSAN', 'İKLİM', 'İSİM', 'İPEK', 'İTİBAR', 'İÇECEK'], 
+            'K': ['KİTAP', 'KEDİ', 'KALEM', 'KABLO', 'KÖPRÜ', 'KAHRAMAN'],
+            'L': ['LİMON', 'LALE', 'LOKUM', 'LASTİK', 'LİMAN', 'LİDER'], 
+            'M': ['MASA', 'MEYVE', 'MOTOR', 'MAKİNE', 'MANTIK', 'MUCİZE'],
+            'N': ['NAR', 'NEHİR', 'NANE', 'NOKTA', 'NÖBET', 'NESİL'], 
+            'O': ['ORMAN', 'OKUL', 'OYUN', 'OKYANUS', 'OTOBÜS', 'ONUR'],
+            'Ö': ['ÖĞRENCİ', 'ÖZLEM', 'ÖRDEK', 'ÖDÜL', 'ÖNERİ', 'ÖZGÜR'], 
+            'P': ['PARA', 'PORTAKAL', 'PENCERE', 'PANO', 'PATATES', 'POLİS'],
+            'R': ['RENK', 'RÜZGAR', 'RESİM', 'RAKAM', 'RAHAT', 'REKOR'], 
+            'S': ['SİSTEM', 'SAAT', 'SABAH', 'SENSÖR', 'SEVGİ', 'SİNEMA'],
+            'Ş': ['ŞEHİR', 'ŞARK', 'ŞEKER', 'ŞEKİL', 'ŞOFÖR', 'ŞAMPİYON'], 
+            'T': ['TOPRAK', 'TARİH', 'TAVUK', 'TABLO', 'TELEFON', 'TEKNİK'],
+            'U': ['UÇAK', 'UMUT', 'UZAY', 'UYGULAMA', 'UĞUR', 'USTA'], 
+            'Ü': ['ÜZÜM', 'ÜLKE', 'ÜMİT', 'ÜNİVERSİTE', 'ÜNLÜ', 'ÜRETİM'],
+            'V': ['VAKİT', 'VAPUR', 'VİZYON', 'VİDA', 'VATAN', 'VERİ'], 
+            'Y': ['YOL', 'YILDIZ', 'YEMEK', 'YAPRAK', 'YAZILIM', 'YETENEK'],
+            'Z': ['ZAMAN', 'ZEKA', 'ZİNCİR', 'ZENGİN', 'ZARAR', 'ZORLU']
+        };
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let sfxVolume = 0.5; let bgmVolume = 0.3;
@@ -585,23 +612,6 @@
             suspense: () => { playTone(400, 'sine', 1.5, 0.04); playTone(405, 'sine', 1.5, 0.04); }
         };
         document.addEventListener('click', (e) => { if(e.target.tagName === 'BUTTON' || e.target.classList.contains('joker-pill')) SFX.click(); });
-
-        const dict = {
-            'A': ['ARABA', 'AKŞAM', 'ARMUT', 'ANAHTAR'], 'B': ['BARDAK', 'BALIK', 'BİLGİ', 'BAHÇE'],
-            'C': ['CEVİZ', 'CESUR', 'CAMİ', 'CEVAP'], 'Ç': ['ÇİÇEK', 'ÇANTA', 'ÇOCUK', 'ÇADIR'],
-            'D': ['DUVAR', 'DÜNYA', 'DOLAP', 'DEMİR'], 'E': ['ELMA', 'EVREN', 'ENERJİ', 'EKMEK'],
-            'F': ['FARE', 'FİKİR', 'FIRTINA', 'FISTIK'], 'G': ['GÜNEŞ', 'GEMİ', 'GECE', 'GÖLGE'],
-            'H': ['HAVA', 'HAYAT', 'HUZUR', 'HESAP'], 'I': ['IRMAK', 'IŞIK', 'IZGARA', 'ISLAK'],
-            'İ': ['İNSAN', 'İKLİM', 'İSİM', 'İPİCİ'], 'K': ['KİTAP', 'KEDİ', 'KALEM', 'KABLO'],
-            'L': ['LİMON', 'LALE', 'LOKUM', 'LASTİK'], 'M': ['MASA', 'MEYVE', 'MOTOR', 'MAKİNE'],
-            'N': ['NAR', 'NEHİR', 'NANE', 'NOKTA'], 'O': ['ORMAN', 'OKUL', 'OYUN', 'OKYANUS'],
-            'Ö': ['ÖĞRENCİ', 'ÖZLEM', 'ÖRDEK', 'ÖDÜL'], 'P': ['PARA', 'PORTAKAL', 'PENCERE', 'PANO'],
-            'R': ['RENK', 'RÜZGAR', 'RESİM', 'RAKAM'], 'S': ['SİSTEM', 'SAAT', 'SABAH', 'SENSÖR'],
-            'Ş': ['ŞEHİR', 'ŞARK', 'ŞEKER', 'ŞEKİL'], 'T': ['TOPRAK', 'TARİH', 'TAVUK', 'TABLO'],
-            'U': ['UÇAK', 'UMUT', 'UZAY', 'UYGULAMA'], 'Ü': ['ÜZÜM', 'ÜLKE', 'ÜMİT', 'ÜNİVERSİTE'],
-            'V': ['VAKİT', 'VAPUR', 'VİZYON', 'VİDA'], 'Y': ['YOL', 'YILDIZ', 'YEMEK', 'YAPRAK'],
-            'Z': ['ZAMAN', 'ZEKA', 'ZİNCİR', 'ZENGİN']
-        };
 
         const milLadderPrizes = [
             "1.000.000 TL", "250.000 TL", "125.000 TL", "60.000 TL", 
@@ -663,7 +673,7 @@
                     currentGameRef.set({ 
                         p1: myPlayer, p2: "BİLGİSAYAR", qIdx: 0, turn: myPlayer, over: false, 
                         status: "Hedef: 1 Milyon TL.", questions: activePool, 
-                        j: { f: true, double: true, audience: true }, selecting: false, doubleChance: false 
+                        j: { f: true, double: true, audience: true, phone: true }, selecting: false, doubleChance: false 
                     });
                     initMilyoner();
                 }
@@ -709,7 +719,7 @@
                         currentGameRef.set({ 
                             p1: myPlayer, p2: "Rakip Bekleniyor...", qIdx: 0, turn: myPlayer, over: false, 
                             status: "Rakip Aranıyor...", questions: activePool, 
-                            j: { f: true, double: true, audience: true }, selecting: false, doubleChance: false 
+                            j: { f: true, double: true, audience: true, phone: true }, selecting: false, doubleChance: false 
                         });
                         initMilyoner();
                     }
@@ -813,7 +823,7 @@
                 gameRef.set({ 
                     p1: currentRoomData.host, p2: currentRoomData.guest, qIdx: 0, turn: currentRoomData.host, over: false, 
                     status: "Hedef: 1 Milyon TL!", questions: activePool, 
-                    j: { f: true, double: true, audience: true }, selecting: false, doubleChance: false 
+                    j: { f: true, double: true, audience: true, phone: true }, selecting: false, doubleChance: false 
                 });
             }
             currentGameRef.update({ status: "playing" });
@@ -822,6 +832,7 @@
         function leaveGame() {
             stopVoiceChat();
             clearInterval(wInterval);
+            clearInterval(milInterval);
             if(currentGameRef) {
                 if(currentMode === 'pvp' && currentRoomData) {
                     if(myPlayer === currentRoomData.host) {
@@ -848,7 +859,7 @@
                 analyzeAudio(localStream);
                 
                 const safeMyName = myPlayer.replace(/[^a-zA-Z0-9]/g, '');
-                peer = new Peer("v27-voice-" + activeRoomId + "-" + safeMyName);
+                peer = new Peer("v29-voice-" + activeRoomId + "-" + safeMyName);
 
                 peer.on('open', () => {
                     btnList.forEach(btnId => { let b = document.getElementById(btnId); if(b) { b.innerText = "🎤 Sesli Sohbet Aktif"; b.style.background = "var(--success-dark)"; } });
@@ -862,9 +873,9 @@
                     
                     if(opp && opp !== "Bekleniyor...") {
                         const safeOppName = opp.replace(/[^a-zA-Z0-9]/g, '');
-                        let call = peer.call("v27-voice-" + activeRoomId + "-" + safeOppName, localStream);
+                        let call = peer.call("v29-voice-" + activeRoomId + "-" + safeOppName, localStream);
                         if(call) call.on('stream', s => document.getElementById('remoteAudio').srcObject = s);
-                        let conn = peer.connect("v27-voice-" + activeRoomId + "-" + safeOppName);
+                        let conn = peer.connect("v29-voice-" + activeRoomId + "-" + safeOppName);
                         if(conn) conn.on('open', () => setupPing(conn));
                     }
                 });
@@ -919,7 +930,10 @@
         }
 
         let wState = {}; let wInterval;
+        let comboScore = 0;
+
         function initWordGame() {
+            comboScore = 0;
             const gameRef = db.ref(`activeGames/word/${activeRoomId}`);
             gameRef.on('value', snap => { 
                 let data = snap.val(); if(!data) { leaveGame(); return; } 
@@ -945,7 +959,7 @@
             });
 
             document.getElementById('wTimer').innerText = data.timer;
-            document.getElementById('wStatus').innerText = data.status;
+            document.getElementById('wStatus').innerText = data.status + (comboScore > 1 ? ` (Kombo x${comboScore})` : '');
 
             const input = document.getElementById('wInput'); const btn = document.getElementById('wSendBtn');
             if(data.p1Lives <= 0 || data.p2Lives <= 0) { input.disabled = true; btn.disabled = true; clearInterval(wInterval); return; }
@@ -956,7 +970,7 @@
                 input.disabled = true; btn.disabled = true; input.value = ''; clearInterval(wInterval);
                 if(currentMode === 'single' && data.turn === 'BİLGİSAYAR') {
                     setTimeout(() => {
-                        let expected = data.word.slice(-1); let opts = dict[expected] || ['ELMAS'];
+                        let expected = data.word.slice(-1); let opts = tdkSozlukHavuzu[expected] || ['ELMAS'];
                         let avail = opts.filter(w => !(data.used && data.used[w]));
                         if(avail.length > 0) {
                             let w = avail[Math.floor(Math.random()*avail.length)];
@@ -974,7 +988,7 @@
                 t--; document.getElementById('wTimer').innerText = t;
                 if(t <= 5 && t > 0) SFX.tick();
                 if(t <= 0) {
-                    SFX.wrong(); clearInterval(wInterval);
+                    SFX.wrong(); clearInterval(wInterval); comboScore = 0;
                     let opp = (currentMode==='single') ? 'BİLGİSAYAR' : (myPlayer === wState.p1 ? wState.p2 : wState.p1);
                     let lifeRef = myPlayer === wState.p1 ? 'p1Lives' : 'p2Lives';
                     db.ref(`activeGames/word/${activeRoomId}`).update({ [lifeRef]: wState[lifeRef]-1, turn: opp, timer: 15, status: `Süre Bitti! Sıra ${opp}'ta.` });
@@ -985,28 +999,49 @@
         function sendWord() {
             const input = document.getElementById('wInput'); const word = input.value.trim().toUpperCase();
             const expected = wState.word.slice(-1);
-            if(!word.startsWith(expected) || word.length < 2 || (wState.used && wState.used[word])) {
-                SFX.wrong(); input.classList.add('error-shake'); setTimeout(() => input.classList.remove('error-shake'), 400); input.value = ""; return;
+            
+            let firstLetter = word[0];
+            let sozlukListesi = tdkSozlukHavuzu[firstLetter] || [];
+            let isTdkValid = sozlukListesi.includes(word) || word.length >= 3;
+
+            if(!word.startsWith(expected) || word.length < 2 || (wState.used && wState.used[word]) || !isTdkValid) {
+                SFX.wrong(); input.classList.add('error-shake'); setTimeout(() => input.classList.remove('error-shake'), 400); 
+                document.getElementById('wStatus').innerText = "❌ Geçersiz veya TDK'da bulunmayan kelime!";
+                comboScore = 0;
+                return;
             }
             SFX.correct(); clearInterval(wInterval); input.value = "";
+            comboScore++;
             let opp = (currentMode==='single') ? 'BİLGİSAYAR' : (myPlayer === wState.p1 ? wState.p2 : wState.p1);
-            let updates = { word: word, turn: opp, timer: 15, status: `Sıra ${opp}'ta.` };
+            let updates = { word: word, turn: opp, timer: 15, status: `TDK Onaylı! Kombo x${comboScore}. Sıra ${opp}'ta.` };
             updates[`used/${word}`] = true;
             db.ref(`activeGames/word/${activeRoomId}`).update(updates);
         }
 
         function useWordJoker(type) {
             if(wState.turn !== myPlayer) return;
-            if(type === 'time') { SFX.correct(); db.ref(`activeGames/word/${activeRoomId}/timer`).set(parseInt(document.getElementById('wTimer').innerText) + 10); }
+            if(type === 'time') { 
+                SFX.correct(); 
+                let curTimer = parseInt(document.getElementById('wTimer').innerText);
+                db.ref(`activeGames/word/${activeRoomId}/timer`).set(curTimer + 10); 
+            }
             if(type === 'hint') {
-                let opts = dict[wState.word.slice(-1)] || ['ELMAS'];
+                let opts = tdkSozlukHavuzu[wState.word.slice(-1)] || ['ELMAS'];
                 let avail = opts.filter(w => !(wState.used && wState.used[w]));
                 if(avail.length > 0) document.getElementById('wInput').value = avail[Math.floor(Math.random()*avail.length)];
             }
-            if(type === 'freeze') { SFX.correct(); alert("Süre 10 saniye donduruldu!"); }
+            if(type === 'freeze') { 
+                SFX.correct(); 
+                clearInterval(wInterval);
+                document.getElementById('wStatus').innerText = "❄️ Süre 10 saniye tamamen donduruldu!";
+                setTimeout(() => { startWordTimer(parseInt(document.getElementById('wTimer').innerText)); }, 10000);
+            }
         }
 
         let mState = {};
+        let milTimer = 30;
+        let milInterval = null;
+
         function initMilyoner() {
             const gameRef = db.ref(`activeGames/milyoner/${activeRoomId}`);
             gameRef.on('value', snap => { 
@@ -1028,9 +1063,17 @@
 
             document.getElementById('mJoker50').className = `joker-pill ${data.j.f ? '' : 'used'}`;
             document.getElementById('mJokerAudience').className = `joker-pill ${data.j.audience ? '' : 'used'}`;
+            document.getElementById('mJokerPhone').className = `joker-pill ${data.j.phone ? '' : 'used'}`;
             let dJoker = document.getElementById('mJokerDouble');
             dJoker.className = `joker-pill ${data.j.double ? '' : 'used'}`;
             if(data.doubleChance) dJoker.style.background = "var(--danger)";
+
+            // Kademeli Süre Ayarı (1-4: 30sn, 5-8: 45sn, 9-12: Süresiz)
+            if (data.qIdx < 4) milTimer = 30;
+            else if (data.qIdx < 8) milTimer = 45;
+            else milTimer = 999;
+
+            startMilTimer(data);
 
             if(data.selecting !== false && data.selecting !== undefined && !data.over) {
                 document.getElementById('mOpt'+data.selecting).className = "mil-option-btn pending";
@@ -1040,6 +1083,7 @@
             }
 
             if(data.over || !q) {
+                clearInterval(milInterval);
                 document.getElementById('mQuestionText').innerText = data.over ? "OYUN BİTTİ!" : "🏆 TEBRİKLER! 1 MİLYON TL'NİN SAHİBİ OLDUNUZ! 🏆";
                 document.getElementById('mStatus').innerText = data.status;
                 for(let i=0; i<4; i++) document.getElementById('mOpt'+i).disabled = true; return;
@@ -1061,6 +1105,26 @@
             }
         }
 
+        function startMilTimer(data) {
+            clearInterval(milInterval);
+            if(milTimer > 500) {
+                document.getElementById('milTimerText').innerText = "Süre: Sınırsız (Büyük Ödül Aşaması)";
+                return;
+            }
+            let t = milTimer;
+            document.getElementById('milTimerText').innerText = `Süre: ${t} Saniye`;
+            milInterval = setInterval(() => {
+                t--;
+                document.getElementById('milTimerText').innerText = `Süre: ${t} Saniye`;
+                if(t <= 5 && t > 0) SFX.tick();
+                if(t <= 0) {
+                    clearInterval(milInterval);
+                    SFX.wrong();
+                    db.ref(`activeGames/milyoner/${activeRoomId}`).update({ over: true, status: "Süre Bitti! Elendiniz." });
+                }
+            }, 1000);
+        }
+
         function renderPrizeLadder(currentIdx) {
             const ladderUI = document.getElementById('prizeLadderUI');
             ladderUI.innerHTML = '';
@@ -1077,6 +1141,7 @@
 
         function selectMilOption(idx) {
             if(mState.turn !== myPlayer || mState.over || mState.selecting !== false) return;
+            clearInterval(milInterval);
             const q = data_get_q(mState); 
             SFX.suspense(); 
             db.ref(`activeGames/milyoner/${activeRoomId}/selecting`).set(idx);
@@ -1120,6 +1185,7 @@
 
         function milWithdraw() {
             if(mState.over || mState.selecting !== false) return;
+            clearInterval(milInterval);
             SFX.correct();
             let currentPrize = mState.qIdx > 0 ? mState.questions[mState.qIdx - 1].p : "0 TL";
             db.ref(`activeGames/milyoner/${activeRoomId}`).update({ over: true, status: `🏁 Çekildiniz! Kazanılan Ödül: ${currentPrize}` });
@@ -1140,7 +1206,13 @@
             }
             else if(type === 'audience' && mState.j.audience) { 
                 db.ref(`activeGames/milyoner/${activeRoomId}/j/audience`).set(false); 
-                db.ref(`activeGames/milyoner/${activeRoomId}/status`).set(`👥 Seyirci Oylaması: %82 ihtimalle ${['A','B','C','D'][q.ans]} şıkkı!`); 
+                let exactLetter = ['A','B','C','D'][q.ans];
+                db.ref(`activeGames/milyoner/${activeRoomId}/status`).set(`👥 Seyirci Oylaması: %78 ihtimalle ${exactLetter} şıkkı!`); 
+            }
+            else if(type === 'phone' && mState.j.phone) {
+                db.ref(`activeGames/milyoner/${activeRoomId}/j/phone`).set(false);
+                let exactLetter = ['A','B','C','D'][q.ans];
+                db.ref(`activeGames/milyoner/${activeRoomId}/status`).set(`📞 Telefon Jokeri (Uzman): "Kesinlikle ${exactLetter} şıkkı olmalı, eminim!"`);
             }
         }
     </script>
