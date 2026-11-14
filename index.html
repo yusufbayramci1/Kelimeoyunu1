@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Seri Bağlantı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            overscroll-behavior: none; /* iOS bounce fix */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Custom Scrollbar for Used Words */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animations */
+        @keyframes pop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake { animation: shake 0.2s ease-in-out; }
+
+        /* Timer Bar Transitions */
+        .timer-bar { transition: width 0.1s linear, background-color 0.3s; }
+
+        /* Power Button Glows */
+        .power-active-yusuf { box-shadow: 0 0 15px 2px rgba(234, 179, 8, 0.6); border-color: #eab308; }
+        .power-active-yaren { box-shadow: 0 0 15px 2px rgba(56, 189, 248, 0.6); border-color: #38bdf8; }
+
+        input:focus { outline: none; }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col items-center justify-center overflow-hidden">
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-11/12 max-w-sm pointer-events-none"></div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="w-full max-w-md h-full bg-slate-900 shadow-2xl relative flex flex-col">
+        
+        <!-- SCREEN: LOADING -->
+        <div id="loading-screen" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 z-40">
+            <div class="w-12 h-12 border-4 border-slate-600 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+            <p class="text-slate-400 font-medium">Bağlantı Kuruluyor...</p>
+        </div>
+
+        <!-- SCREEN: LOBBY -->
+        <div id="lobby-screen" class="hidden absolute inset-0 flex-col items-center justify-center bg-slate-900 z-30 p-6 animate-pop">
+            <div class="text-center mb-8">
+                <h1 class="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 mb-2">Seri Bağlantı</h1>
+                <p class="text-sm text-slate-400">Yusuf ve Yaren için özel sürüm</p>
+            </div>
+
+            <div class="w-full space-y-4 bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Oda Kodu</label>
+                    <input type="text" id="room-code-input" placeholder="Örn: 12345" class="w-full bg-slate-900 border border-slate-600 text-white rounded-xl px-4 py-3 font-mono text-center text-xl uppercase placeholder-slate-600 focus:border-blue-500 transition-colors" autocomplete="off" autocorrect="off">
+                </div>
+                
+                <div class="flex gap-3 pt-2">
+                    <button id="btn-create-room" class="flex-1 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-blue-900/50">
+                        Oda Kur (Yusuf)
+                    </button>
+                    <button id="btn-join-room" class="flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-emerald-900/50">
+                        Katıl (Yaren)
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center px-4">
+                <p class="text-xs text-slate-500">Odayı kuran kişi otomatik olarak <span class="text-yellow-500 font-bold">Yusuf (Kısa Devre)</span>, katılan kişi ise <span class="text-blue-400 font-bold">Yaren (Mavi Dalga)</span> olur.</p>
+            </div>
+        </div>
+
+        <!-- SCREEN: WAITING -->
+        <div id="waiting-screen" class="hidden absolute inset-0 flex-col items-center justify-center bg-slate-900 z-20 p-6 animate-pop">
+            <h2 class="text-2xl font-bold mb-2">Oda Kodun: <span id="display-room-code" class="text-blue-400 font-mono"></span></h2>
+            <p class="text-slate-400 mb-8 text-center">Yaren'in odaya katılması bekleniyor...</p>
+            <div class="w-16 h-16 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin"></div>
+        </div>
+
+        <!-- SCREEN: GAME -->
+        <div id="game-screen" class="hidden flex-col h-full z-10">
+            <!-- Header (Scores) -->
+            <div class="flex justify-between items-center p-4 bg-slate-800/80 backdrop-blur-md border-b border-slate-700 shrink-0">
+                <div class="flex flex-col items-start">
+                    <span class="text-xs font-bold text-slate-400">YUSUF</span>
+                    <div class="flex gap-1 mt-1" id="yusuf-penalties">
+                        <!-- Penalty dots filled via JS -->
+                    </div>
+                </div>
+                <div class="text-center">
+                    <span class="text-xs font-semibold text-slate-500">CEZA PUANLARI</span>
+                    <div class="text-[10px] text-slate-600">5 YAPAN KAYBEDER</div>
+                </div>
+                <div class="flex flex-col items-end">
+                    <span class="text-xs font-bold text-slate-400">YAREN</span>
+                    <div class="flex gap-1 mt-1" id="yaren-penalties">
+                         <!-- Penalty dots filled via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timer Bar -->
+            <div class="w-full h-1.5 bg-slate-800 shrink-0">
+                <div id="timer-bar" class="h-full bg-emerald-500 timer-bar w-full"></div>
+            </div>
+
+            <!-- Active Status / Power Warning -->
+            <div id="status-banner" class="text-center py-2 text-sm font-bold bg-slate-800 border-b border-slate-700 shrink-0 transition-colors duration-300">
+                Sıra Yaren'de
+            </div>
+
+            <!-- Main Game Area -->
+            <div class="flex-1 flex flex-col p-4 overflow-hidden relative">
+                
+                <!-- Used Words History -->
+                <div id="used-words-container" class="flex-1 overflow-y-auto no-scrollbar flex flex-col justify-end space-y-2 pb-4 opacity-70">
+                    <!-- History injected here -->
+                </div>
+
+                <!-- Current Target Word -->
+                <div class="shrink-0 flex flex-col items-center justify-center py-6">
+                    <div class="text-sm text-slate-400 mb-1">Bağlanılacak Kelime</div>
+                    <div id="current-word" class="text-4xl font-extrabold tracking-widest uppercase text-white drop-shadow-lg">
+                        REKABET
+                    </div>
+                    <div id="required-letter-hint" class="mt-2 text-emerald-400 font-medium text-lg">
+                        'T' ile başlayan bir kelime bul!
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div id="input-area" class="p-4 bg-slate-800 border-t border-slate-700 shrink-0 transition-opacity duration-300">
+                <div class="flex gap-2 mb-2 relative">
+                    <!-- Power Button -->
+                    <button id="btn-power" class="shrink-0 w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center text-xl border-2 border-transparent transition-all active:scale-90 relative">
+                        <span id="power-icon">⚡</span>
+                        <div id="power-count" class="absolute -top-1 -right-1 bg-slate-900 text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center border border-slate-600">2</div>
+                    </button>
+                    
+                    <!-- Text Input -->
+                    <input type="text" id="word-input" class="flex-1 bg-slate-900 border border-slate-600 rounded-xl px-4 py-2 text-lg font-bold text-white uppercase placeholder-slate-600" placeholder="KELİME YAZ..." autocomplete="off" autocorrect="off" spellcheck="false">
+                    
+                    <!-- Submit Button -->
+                    <button id="btn-submit" class="shrink-0 w-12 h-12 bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center text-white transition-all active:scale-90 shadow-lg shadow-blue-900/50">
+                        ➤
+                    </button>
+                </div>
+                <div id="power-description" class="text-[10px] text-center text-slate-400 h-3">
+                    Özel güç kullanmak için ikona dokun
+                </div>
+            </div>
+            
+            <!-- Overlay for Opponent's Turn -->
+            <div id="opponent-turn-overlay" class="absolute bottom-0 left-0 right-0 h-24 bg-slate-900/80 backdrop-blur-sm z-10 flex items-center justify-center border-t border-slate-700 hidden">
+                <p class="text-slate-300 font-semibold animate-pulse">Rakibin kelime girmesi bekleniyor...</p>
+            </div>
+        </div>
+
+        <!-- SCREEN: GAME OVER -->
+        <div id="game-over-screen" class="hidden absolute inset-0 flex-col items-center justify-center bg-slate-900/95 backdrop-blur-md z-50 p-6 animate-pop text-center">
+            <h1 id="winner-title" class="text-5xl font-black mb-4">OYUN BİTTİ</h1>
+            <p id="winner-desc" class="text-lg text-slate-300 mb-8"></p>
+            
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 max-w-sm w-full mb-8 shadow-2xl">
+                <h3 class="text-red-400 font-bold mb-2">CEZA ZAMANI!</h3>
+                <p id="punishment-text" class="text-sm text-slate-300"></p>
+            </div>
+
+            <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 rounded-2xl transition-all shadow-xl active:scale-95">
+                Yeni Oyun Oyna
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuration
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'seri-baglanti-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // Add fallback config for local testing if needed, though system provides it.
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // State Variables
+        let currentUser = null;
+        let currentRoomId = null;
+        let roomData = null;
+        let isMyTurn = false;
+        let myRole = null; // 'p1' (Yusuf) or 'p2' (Yaren)
+        let isPowerPrepared = false;
+        let timerInterval = null;
+        let isHandlingTimeout = false; // Prevent double timeout execution
+
+        // DOM Elements
+        const screens = {
+            loading: document.getElementById('loading-screen'),
+            lobby: document.getElementById('lobby-screen'),
+            waiting: document.getElementById('waiting-screen'),
+            game: document.getElementById('game-screen'),
+            gameOver: document.getElementById('game-over-screen')
+        };
+        const inputs = {
+            roomCode: document.getElementById('room-code-input'),
+            word: document.getElementById('word-input')
+        };
+        const buttons = {
+            create: document.getElementById('btn-create-room'),
+            join: document.getElementById('btn-join-room'),
+            submit: document.getElementById('btn-submit'),
+            power: document.getElementById('btn-power')
+        };
+        const ui = {
+            toastContainer: document.getElementById('toast-container'),
+            displayRoomCode: document.getElementById('display-room-code'),
+            yusufPenalties: document.getElementById('yusuf-penalties'),
+            yarenPenalties: document.getElementById('yaren-penalties'),
+            timerBar: document.getElementById('timer-bar'),
+            statusBanner: document.getElementById('status-banner'),
+            usedWordsContainer: document.getElementById('used-words-container'),
+            currentWord: document.getElementById('current-word'),
+            requiredLetterHint: document.getElementById('required-letter-hint'),
+            powerIcon: document.getElementById('power-icon'),
+            powerCount: document.getElementById('power-count'),
+            powerDesc: document.getElementById('power-description'),
+            opponentOverlay: document.getElementById('opponent-turn-overlay'),
+            winnerTitle: document.getElementById('winner-title'),
+            winnerDesc: document.getElementById('winner-desc'),
+            punishmentText: document.getElementById('punishment-text')
+        };
+
+        // Audio System (Tone.js)
+        let synth, zapSynth, errorSynth;
+        async function initAudio() {
+            await Tone.start();
+            synth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+            zapSynth = new Tone.MembraneSynth().toDestination();
+            errorSynth = new Tone.FMSynth().toDestination();
+        }
+        function playSound(type) {
+            if(!synth) return;
+            try {
+                if(type === 'turn') synth.triggerAttackRelease("C5", "16n");
+                else if(type === 'submit') synth.triggerAttackRelease("G4", "8n");
+                else if(type === 'power') zapSynth.triggerAttackRelease("C2", "8n");
+                else if(type === 'error') errorSynth.triggerAttackRelease("C2", "8n");
+                else if(type === 'timeout') errorSynth.triggerAttackRelease("E1", "4n");
+            } catch(e){}
+        }
+
+        // Initialization
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                showToast("Bağlantı hatası oluştu.", "error");
+                console.error(error);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                showScreen('lobby');
+                // Ensure Tone.js starts on first interaction
+                document.body.addEventListener('click', initAudio, { once: true });
+                document.body.addEventListener('touchstart', initAudio, { once: true });
+            }
+        });
+
+        // Utility: Show Specific Screen
+        function showScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            screens[screenName].classList.remove('hidden');
+        }
+
+        // Utility: Show Toast
+        function showToast(message, type = "info") {
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-red-500' : (type === 'success' ? 'bg-emerald-500' : 'bg-blue-500');
+            toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-lg font-bold text-sm text-center transform transition-all duration-300 translate-y-[-20px] opacity-0`;
+            toast.innerText = message;
+            ui.toastContainer.appendChild(toast);
+            
+            if(type === 'error') {
+                playSound('error');
+                inputs.word.parentElement.classList.add('animate-shake');
+                setTimeout(() => inputs.word.parentElement.classList.remove('animate-shake'), 300);
+            }
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+            });
+
+            // Remove after delay
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // Utility: Turkish Uppercase
+        function toTrUpper(str) {
+            return str.replace(/i/g, 'İ').replace(/ı/g, 'I').toLocaleUpperCase('tr-TR');
+        }
+
+        // Room Management
+        buttons.create.addEventListener('click', async () => {
+            const code = inputs.roomCode.value.trim().toUpperCase();
+            if(!code || code.length < 3) return showToast("Geçerli bir oda kodu girin.", "error");
+            
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+                await setDoc(roomRef, {
+                    status: 'waiting',
+                    p1: { uid: currentUser.uid, name: 'Yusuf', penalties: 0, powers: 2 },
+                    p2: null,
+                    currentTurn: null, // Starts when P2 joins
+                    lastWord: "REKABET",
+                    usedWords: ["REKABET"],
+                    timeLimit: 10,
+                    turnStart: 0,
+                    activePower: "none",
+                    winner: null
+                });
+                
+                currentRoomId = code;
+                myRole = 'p1';
+                ui.displayRoomCode.innerText = code;
+                showScreen('waiting');
+                listenToRoom();
+            } catch(e) {
+                console.error(e);
+                showToast("Oda kurulamadı.", "error");
+            }
+        });
+
+        buttons.join.addEventListener('click', async () => {
+            const code = inputs.roomCode.value.trim().toUpperCase();
+            if(!code) return showToast("Oda kodu girin.", "error");
+            
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+                const roomSnap = await getDoc(roomRef);
+                
+                if (!roomSnap.exists()) return showToast("Böyle bir oda bulunamadı.", "error");
+                const data = roomSnap.data();
+                if (data.status !== 'waiting') return showToast("Bu oda dolu veya oyun bitmiş.", "error");
+                if (data.p1.uid === currentUser.uid) return showToast("Kendi odanıza katılamazsınız.", "error");
+
+                // Join as P2 (Yaren) and start game
+                await updateDoc(roomRef, {
+                    p2: { uid: currentUser.uid, name: 'Yaren', penalties: 0, powers: 2 },
+                    status: 'playing',
+                    currentTurn: currentUser.uid, // Yaren starts the first real turn
+                    turnStart: Date.now()
+                });
+                
+                currentRoomId = code;
+                myRole = 'p2';
+                listenToRoom();
+            } catch(e) {
+                console.error(e);
+                showToast("Odaya katılınamadı.", "error");
+            }
+        });
+
+        // Game Loop & State Sync
+        function listenToRoom() {
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            onSnapshot(roomRef, (docSnap) => {
+                if (!docSnap.exists()) return;
+                roomData = docSnap.data();
+                renderGame();
+            }, (error) => {
+                console.error("Dinleme hatası:", error);
+                showToast("Bağlantı koptu!", "error");
+            });
+        }
+
+        function renderGame() {
+            if(roomData.status === 'waiting') return; // Handled by waiting screen
+
+            if(roomData.status === 'finished') {
+                showScreen('gameOver');
+                clearInterval(timerInterval);
+                renderGameOver();
+                return;
+            }
+
+            showScreen('game');
+            updateScores();
+            
+            const prevTurn = isMyTurn;
+            isMyTurn = roomData.currentTurn === currentUser.uid;
+
+            // Handle Turn Change Visuals
+            if (isMyTurn && !prevTurn) {
+                playSound('turn');
+                ui.opponentOverlay.classList.add('hidden');
+                inputs.word.value = '';
+                isPowerPrepared = false;
+                updatePowerUI();
+                // Attempt to focus input (may be blocked by iOS if not user initiated, but helps on other devices)
+                setTimeout(() => inputs.word.focus(), 100); 
+            } else if (!isMyTurn) {
+                ui.opponentOverlay.classList.remove('hidden');
+                inputs.word.blur(); // Hide keyboard
+            }
+
+            // Status Banner
+            const amI_P1 = myRole === 'p1';
+            const myData = amI_P1 ? roomData.p1 : roomData.p2;
+            const oppData = amI_P1 ? roomData.p2 : roomData.p1;
+            
+            if (isMyTurn) {
+                ui.statusBanner.innerText = "SIRA SENDE!";
+                ui.statusBanner.className = "text-center py-2 text-sm font-black bg-emerald-600 text-white shrink-0 shadow-lg shadow-emerald-900/50";
+            } else {
+                ui.statusBanner.innerText = `Sıra ${oppData.name}'de`;
+                ui.statusBanner.className = "text-center py-2 text-sm font-bold bg-slate-800 border-b border-slate-700 shrink-0 text-slate-400";
+            }
+
+            // Special State Banners overlaying status if needed
+            if (isMyTurn && roomData.activePower === 'kisa_devre') {
+                ui.statusBanner.innerText = "⚡ KISA DEVRE AKTİF! HIZLI OL!";
+                ui.statusBanner.className = "text-center py-2 text-sm font-black bg-yellow-600 text-white shrink-0 animate-pulse";
+            } else if (isMyTurn && roomData.activePower === 'mavi_dalga') {
+                ui.statusBanner.innerText = "🌊 MAVİ DALGA AKTİF! 'A' HARFİ YASAK!";
+                ui.statusBanner.className = "text-center py-2 text-sm font-black bg-blue-600 text-white shrink-0";
+            }
+
+            // Word History
+            ui.usedWordsContainer.innerHTML = '';
+            roomData.usedWords.slice(0, -1).forEach((w, index) => {
+                const isP1Word = index % 2 === 0; // P1 starts with REKABET
+                const div = document.createElement('div');
+                div.className = `text-xs font-mono p-1 px-2 rounded w-fit ${isP1Word ? 'text-yellow-400 self-start' : 'text-blue-400 self-end'}`;
+                div.innerText = w;
+                ui.usedWordsContainer.appendChild(div);
+            });
+            // Auto scroll to bottom
+            ui.usedWordsContainer.scrollTop = ui.usedWordsContainer.scrollHeight;
+
+            // Current Word
+            ui.currentWord.innerText = roomData.lastWord || "?";
+            if (roomData.lastWord) {
+                const lastChar = roomData.lastWord.slice(-1).toUpperCase();
+                ui.requiredLetterHint.innerText = `'${lastChar}' ile başlayan kelime yaz`;
+            } else {
+                ui.requiredLetterHint.innerText = "İstediğin harfle başla!"; // If word was reset by timeout
+            }
+
+            // Power UI
+            ui.powerIcon.innerText = myRole === 'p1' ? '⚡' : '🌊';
+            ui.powerCount.innerText = myData.powers;
+            ui.powerDesc.innerText = myRole === 'p1' ? 'Kısa Devre (Süreyi 3s yapar)' : 'Mavi Dalga ("A" harfini yasaklar)';
+            
+            if (myData.powers <= 0 || !isMyTurn) {
+                buttons.power.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                buttons.power.classList.remove('opacity-50', 'pointer-events-none');
+            }
+            updatePowerUI();
+
+            // Start Timer Loop
+            clearInterval(timerInterval);
+            if (roomData.status === 'playing') {
+                timerInterval = setInterval(updateTimerUI, 50); // High frequency for smooth bar
+            }
+        }
+
+        function updateScores() {
+            // Helper to render penalty dots
+            const renderDots = (count, container) => {
+                container.innerHTML = '';
+                for(let i=0; i<5; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = `w-3 h-3 rounded-full border border-slate-600 ${i < count ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]' : 'bg-slate-800'}`;
+                    container.appendChild(dot);
+                }
+            };
+            renderDots(roomData.p1.penalties, ui.yusufPenalties);
+            renderDots(roomData.p2.penalties, ui.yarenPenalties);
+        }
+
+        function updateTimerUI() {
+            if (!roomData || roomData.status !== 'playing') return;
+
+            const elapsed = (Date.now() - roomData.turnStart) / 1000;
+            let timeLeft = roomData.timeLimit - elapsed;
+            
+            if (timeLeft < 0) timeLeft = 0;
+
+            const percentage = (timeLeft / roomData.timeLimit) * 100;
+            ui.timerBar.style.width = `${percentage}%`;
+
+            // Color changing logic
+            if (percentage > 50) ui.timerBar.style.backgroundColor = '#10b981'; // Emerald
+            else if (percentage > 20) ui.timerBar.style.backgroundColor = '#eab308'; // Yellow
+            else ui.timerBar.style.backgroundColor = '#ef4444'; // Red
+
+            // Handle Timeout
+            if (timeLeft <= 0 && isMyTurn && !isHandlingTimeout) {
+                executeTimeout();
+            }
+        }
+
+        async function executeTimeout() {
+            isHandlingTimeout = true;
+            playSound('timeout');
+            showToast("Süre bitti! Ceza Puanı aldın.", "error");
+
+            const amI_P1 = myRole === 'p1';
+            const newPenalties = amI_P1 ? roomData.p1.penalties + 1 : roomData.p2.penalties + 1;
+            
+            let updates = {
+                turnStart: Date.now(),
+                timeLimit: 10,
+                activePower: "none",
+                currentTurn: amI_P1 ? roomData.p2.uid : roomData.p1.uid // Switch turn to opponent
+            };
+
+            if (amI_P1) updates["p1.penalties"] = newPenalties;
+            else updates["p2.penalties"] = newPenalties;
+
+            if (newPenalties >= 5) {
+                updates.status = "finished";
+                updates.winner = amI_P1 ? roomData.p2.uid : roomData.p1.uid;
+            }
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+                await updateDoc(roomRef, updates);
+            } catch(e) {
+                console.error("Timeout güncelleme hatası", e);
+            }
+            isHandlingTimeout = false;
+        }
+
+        // Power System Logic
+        buttons.power.addEventListener('click', () => {
+            if (!isMyTurn || roomData.status !== 'playing') return;
+            const myData = myRole === 'p1' ? roomData.p1 : roomData.p2;
+            if (myData.powers <= 0) return;
+
+            isPowerPrepared = !isPowerPrepared;
+            if (isPowerPrepared) playSound('power');
+            updatePowerUI();
+        });
+
+        function updatePowerUI() {
+            buttons.power.classList.remove('power-active-yusuf', 'power-active-yaren');
+            if (isPowerPrepared) {
+                buttons.power.classList.add(myRole === 'p1' ? 'power-active-yusuf' : 'power-active-yaren');
+            }
+        }
+
+        // Submitting Word
+        buttons.submit.addEventListener('click', submitWord);
+        inputs.word.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') submitWord();
+        });
+
+        async function submitWord() {
+            if (!isMyTurn || isHandlingTimeout) return;
+            
+            let word = toTrUpper(inputs.word.value.trim());
+            
+            // Validation
+            const error = validateWord(word);
+            if (error) {
+                showToast(error, "error");
+                return;
+            }
+
+            // Valid submission
+            playSound('submit');
+            
+            const amI_P1 = myRole === 'p1';
+            let nextTimeLimit = 10;
+            let nextPower = "none";
+            let powerCountUpdate = amI_P1 ? roomData.p1.powers : roomData.p2.powers;
+
+            if (isPowerPrepared) {
+                powerCountUpdate -= 1;
+                if (amI_P1) nextTimeLimit = 3; // Kısa Devre
+                else nextPower = "mavi_dalga"; // Mavi Dalga
+            }
+
+            let updates = {
+                lastWord: word,
+                usedWords: arrayUnion(word),
+                currentTurn: amI_P1 ? roomData.p2.uid : roomData.p1.uid,
+                turnStart: Date.now(),
+                timeLimit: nextTimeLimit,
+                activePower: nextPower
+            };
+
+            if (isPowerPrepared) {
+                if (amI_P1) updates["p1.powers"] = powerCountUpdate;
+                else updates["p2.powers"] = powerCountUpdate;
+            }
+
+            // Optimistically lock input
+            isMyTurn = false;
+            ui.opponentOverlay.classList.remove('hidden');
+
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+                await updateDoc(roomRef, updates);
+                inputs.word.value = '';
+                isPowerPrepared = false;
+            } catch(e) {
+                console.error(e);
+                showToast("Kelime gönderilemedi!", "error");
+                isMyTurn = true; // Revert lock on error
+                ui.opponentOverlay.classList.add('hidden');
+            }
+        }
+
+        function validateWord(word) {
+            if (!word) return "Kelime boş olamaz!";
+            if (word.length < 2) return "En az 2 harf olmalı!";
+            if (word.endsWith('Ğ') || word.endsWith('ğ')) return "Kelime 'Ğ' ile bitemez!";
+            if (word.includes(' ')) return "Tek kelime yazmalısın!";
+
+            // Mavi Dalga Kuralı
+            if (roomData.activePower === 'mavi_dalga' && (word.includes('A') || word.includes('a'))) {
+                return "Mavi Dalga devrede! 'A' harfi YASAK!";
+            }
+
+            // Son Harf Kontrolü (Eğer ortada bağlanılacak kelime varsa)
+            if (roomData.lastWord) {
+                const expectedLetter = toTrUpper(roomData.lastWord.slice(-1));
+                const actualLetter = toTrUpper(word.charAt(0));
+                if (expectedLetter !== actualLetter) {
+                    return `Kelime '${expectedLetter}' harfi ile başlamalı!`;
+                }
+            }
+
+            // Daha önce kullanıldı mı?
+            if (roomData.usedWords.includes(word)) {
+                return "Bu kelime daha önce kullanıldı!";
+            }
+
+            return null;
+        }
+
+        // Game Over Screen
+        function renderGameOver() {
+            const amI_Winner = roomData.winner === currentUser.uid;
+            const myName = myRole === 'p1' ? 'Yusuf' : 'Yaren';
+            const oppName = myRole === 'p1' ? 'Yaren' : 'Yusuf';
+
+            if (amI_Winner) {
+                ui.winnerTitle.innerText = "KAZANDIN! 🎉";
+                ui.winnerTitle.className = "text-5xl font-black mb-4 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]";
+                ui.winnerDesc.innerText = `Tebrikler ${myName}, rakibini ezici bir üstünlükle yendin!`;
+                
+                if (myRole === 'p1') {
+                    ui.punishmentText.innerText = "Yaren mutfağa geçiyor! Popeyes tarzı çıtır tavuk menüsü seni bekliyor.";
+                } else {
+                    ui.punishmentText.innerText = "Yusuf mutfağa geçiyor! Tam kıvamında çikolatalı ıslak kek siparişin alındı.";
+                }
+            } else {
+                ui.winnerTitle.innerText = "KAYBETTİN! 💀";
+                ui.winnerTitle.className = "text-5xl font-black mb-4 text-red-500 drop-shadow-[0_0_15px_rgba(239,68,68,0.8)]";
+                ui.winnerDesc.innerText = `Maalesef 5 ceza puanına ulaştın. ${oppName} kazandı.`;
+                
+                if (myRole === 'p1') {
+                    ui.punishmentText.innerText = "Cezalısın! Yaren için o meşhur ıslak keki yapma vakti geldi.";
+                } else {
+                    ui.punishmentText.innerText = "Cezalısın! Yusuf için çıtır tavuk menüsü hazırlamak zorundasın.";
+                }
+            }
+        }
+
+        // Initialize
+        window.onload = () => {
+            initAuth();
+        };
+
+    </script>
+</body>
+</html>
