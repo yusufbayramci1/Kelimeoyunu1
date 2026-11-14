@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Oyun Odası - 3D Metaverse Güvenlik Merkezi V25</title>
+    <title>Oyun Odası - 3D Metaverse V26</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -161,7 +161,7 @@
         .settings-row:last-child { margin-bottom: 0; }
         input[type="range"] { width: 130px; accent-color: var(--primary); cursor: pointer; }
 
-        /* GELİŞMİŞ GÜVENLİK VE KOMUTA MERKEZİ */
+        /* GÜVENLİ GİZLİ YÖNETİCİ PANELİ */
         .url-admin-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 1, 6, 0.98); backdrop-filter: blur(30px); z-index: 999; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; text-align: center; overflow-y: auto; }
         .admin-log-box { background: rgba(0,0,0,0.95); border: 1px solid var(--success); border-radius: 12px; padding: 12px; height: 160px; overflow-y: auto; font-family: monospace; font-size: 11px; color: var(--success); text-align: left; margin-top: 10px; }
         .admin-sec-log { border-color: var(--danger); color: var(--danger); }
@@ -174,14 +174,12 @@
 
     <canvas id="canvas3D"></canvas>
 
-    <!-- GELİŞMİŞ GÜVENLİK VE ŞİFRE YÖNETİMLİ KOMUTA MERKEZİ -->
+    <!-- GÜVENLİ GİZLİ YÖNETİCİ PANELİ (Parametre Tabanlı) -->
     <div class="url-admin-modal" id="urlAdminModal">
         <h2 style="color: var(--primary); font-weight: 900; margin-bottom: 5px; letter-spacing: 2px;">🛡️ GÜVENLİK & KOMUTA MERKEZİ</h2>
         <p style="color: #94a3b8; font-size: 11px; margin-bottom: 15px;">Yapay Zeka Öz Geliştirme ve Gelişmiş Şifre / Log Yönetimi</p>
         
         <div style="max-width: 520px; margin: 0 auto; width: 100%; text-align: left;">
-            
-            <!-- İSTATİSTİK KARTLARI -->
             <div class="admin-grid">
                 <div class="admin-stat-card">
                     <span style="font-size: 10px; color: #94a3b8;">Millî Soru Havuzu</span>
@@ -189,31 +187,27 @@
                 </div>
                 <div class="admin-stat-card">
                     <span style="font-size: 10px; color: #94a3b8;">Güvenlik Durumu</span>
-                    <div class="admin-stat-num" style="color: var(--success);">Şifreli</div>
+                    <div class="admin-stat-num" style="color: var(--success);">Aktif</div>
                 </div>
             </div>
 
-            <!-- ŞİFRE DEĞİŞTİRME SEKMESİ -->
             <div class="settings-group" style="border-color: var(--mil-gold);">
                 <p style="color: var(--mil-gold); font-weight: 900; font-size: 12px; margin-bottom: 8px;">🔑 YÖNETİCİ ŞİFRE YÖNETİMİ</p>
                 <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                    <span style="font-size: 10px; color: #94a3b8;">Mevcut / Yeni Yönetici Şifresi:</span>
+                    <span style="font-size: 10px; color: #94a3b8;">Yeni Yönetici Şifresi:</span>
                     <input type="text" class="name-input" id="adminPassInput" value="1234" style="padding: 8px; font-size: 12px; margin: 0; width: 100%;">
                 </div>
                 <button class="btn-modern btn-primary" onclick="saveAdminPass()" style="padding: 8px; font-size: 11px; margin-top: 8px;">ŞİFREYİ GÜNCELLE</button>
             </div>
 
-            <!-- YAPAY ZEKA VE GELİŞMİŞ GÜVENLİK LOGLARI -->
             <div class="settings-group" style="border-color: var(--primary);">
                 <p style="color: var(--primary); font-weight: 900; font-size: 12px; margin-bottom: 8px;">📊 GELİŞMİŞ GÜVENLİK VE AI LOGLARI</p>
                 <button class="btn-modern btn-primary" onclick="triggerAIGlobalUpgrade()" style="padding: 10px; font-size: 11px; margin-bottom: 8px;">🚀 YAPAY ZEKA ALGORİTMASINI GÜNCELLE</button>
-                <button class="btn-modern btn-action" onclick="forceAIQuestionRefresh()" style="padding: 10px; font-size: 11px; margin: 0;">🌐 TÜRKÇE YENİ SORU HAVUZUNu YÜKLE</button>
+                <button class="btn-modern btn-action" onclick="forceAIQuestionRefresh()" style="padding: 10px; font-size: 11px; margin: 0;">🌐 TÜRKÇE YENİ SORU HAVUZUNU YÜKLE</button>
 
-                <p style="font-size: 10px; color: #94a3b8; margin: 12px 0 3px 0;">Sistem, Yapay Zeka ve Güvenlik Denetim Günlüğü:</p>
+                <p style="font-size: 10px; color: #94a3b8; margin: 12px 0 3px 0;">Sistem Denetim Günlüğü:</p>
                 <div class="admin-log-box" id="adminLogBox">
-                    [08:15] Gelişmiş Güvenlik Modülü (v25) aktif.<br>
-                    [08:15] Yetkisiz erişim denemeleri izleniyor.<br>
-                    [08:15] Millî soru havuzu şifrelendi.
+                    [Sistem]: Güvenli parametre modu devrede.<br>
                 </div>
             </div>
 
@@ -221,7 +215,6 @@
         </div>
     </div>
 
-    <!-- NORMAL OYUN AYARLARI BUTONU -->
     <button class="settings-btn" onclick="toggleSettings(true)" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; z-index: 100; backdrop-filter: blur(12px);">⚙️</button>
 
     <div class="settings-modal" id="settingsModal" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(3,1,8,0.96); backdrop-filter: blur(20px); z-index: 200; display: none; flex-direction: column; padding: 25px; box-sizing: border-box;">
@@ -252,9 +245,8 @@
         </div>
         <audio id="remoteAudio" autoplay playsinline></audio>
 
-        <!-- ANA MENÜ -->
         <div class="screen fade-in" id="hubBoard" style="display: flex;">
-            <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: var(--mil-gold); letter-spacing: 5px;">3D TÜRKÇE METAVERSE V25</span></div>
+            <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: var(--mil-gold); letter-spacing: 5px;">3D TÜRKÇE METAVERSE V26</span></div>
             
             <div id="loginSection" style="width: 100%;">
                 <input type="text" class="name-input" id="playerNameInput" placeholder="ADINIZI VEYA RUMUZUNUZU YAZIN" autocomplete="off" maxlength="10">
@@ -296,7 +288,6 @@
             </div>
         </div>
 
-        <!-- BEKLEME LOBİSİ -->
         <div class="screen" id="customRoomLobby">
             <h2 class="app-title" style="font-size: 22px; margin-bottom: 5px;">BEKLEME LOBİSİ</h2>
             <div class="code-box" id="lobbyRoomCode" style="font-size: 22px; padding: 8px;">-</div>
@@ -318,7 +309,6 @@
             <button class="btn-modern btn-danger" onclick="leaveGame()" style="margin-top: auto; padding: 14px;">ODADAN ÇIK 🚪</button>
         </div>
 
-        <!-- KELİME OYUNU -->
         <div class="screen" id="wordGameBoard">
             <div class="overlay" id="wordMatchOverlay">
                 <h2 style="color: var(--primary); font-weight: 900; letter-spacing: 2px;">🔍 RAKİP ARANIYOR</h2>
@@ -346,7 +336,6 @@
             <button class="btn-modern btn-danger" onclick="leaveGame()" style="padding: 12px; margin-top: auto;">⬅ ÇIKIŞ</button>
         </div>
 
-        <!-- MİLYONER STÜDYO EKRANI -->
         <div class="screen" id="milyonerBoard">
             <div class="overlay" id="milMatchOverlay">
                 <h2 style="color: var(--mil-gold); font-weight: 900; letter-spacing: 2px;">🔍 RAKİP ARANIYOR</h2>
@@ -398,7 +387,6 @@
     </div>
 
     <script>
-        // --- 3D THREE.JS GERÇEKÇİ STÜDYO MOTORU ---
         let scene, camera, renderer, studioLogo3D, spotlight3D;
         let is3DActive = true;
 
@@ -449,18 +437,16 @@
 
             window.addEventListener('resize', onWindowResize);
             animate3D();
-            checkSimpleUrlAdmin();
+            checkParamAdmin();
         }
 
         function animate3D() {
             if (!is3DActive) return;
             requestAnimationFrame(animate3D);
-
             if (studioLogo3D) {
                 studioLogo3D.rotation.x += 0.004;
                 studioLogo3D.rotation.y += 0.008;
             }
-
             renderer.render(scene, camera);
         }
 
@@ -470,20 +456,18 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- URL KONTROLÜ (SONU /1 İSE ADMIN AÇILIR) ---
-        function checkSimpleUrlAdmin() {
-            const path = window.location.pathname;
-            if (path.endsWith('/1') || path.endsWith('/1/')) {
-                // Şifre kontrolü ister (Basit güvenlik doğrulaması)
+        // --- GÜVENLİ URL PARAMETRESİ KONTROLÜ (404 Hatasını Engeller) ---
+        function checkParamAdmin() {
+            const urlParams = new URLSearchParams(window.location.search);
+            // ?admin=1 yazıldığında panel açılır
+            if (urlParams.get('admin') === '1') {
                 let savedPass = localStorage.getItem('adminCustomPass') || '1234';
                 let entered = prompt("🛡️ Güvenli Komuta Merkezi\nLütfen yönetici şifresini girin:");
                 
                 if (entered === savedPass) {
                     document.getElementById('urlAdminModal').style.display = 'flex';
-                    logAdminAction("Güvenlik doğrulaması başarılı. Komuta Merkezi aktif.");
-                    logSecurityLog("Başarılı yönetici oturumu açıldı (IP: Yerel Ağ).");
+                    logAdminAction("Güvenlik doğrulaması başarılı.");
                 } else {
-                    logSecurityLog("Hatalı şifre denemesi! Erişim reddedildi.");
                     alert("Hatalı şifre!");
                     window.location.href = "https://yusufbayramci1.github.io/Kelimeoyunu1/";
                 }
@@ -495,7 +479,6 @@
             if(!newPass) { alert("Şifre boş bırakılamaz!"); return; }
             localStorage.setItem('adminCustomPass', newPass);
             logAdminAction(`Yönetici şifresi güncellendi: ${newPass}`);
-            logSecurityLog("Yönetici şifre güvenlik protokolü yenilendi.");
             alert("Şifreniz başarıyla güncellendi!");
         }
 
@@ -512,33 +495,20 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        function logSecurityLog(text) {
-            const box = document.getElementById('adminLogBox');
-            if(!box) return;
-            const time = new Date().toLocaleTimeString();
-            box.innerHTML += `<br><span class="admin-sec-log">[${time}] [GÜVENLİK]: ${text}</span>`;
-            box.scrollTop = box.scrollHeight;
-        }
-
-        // --- YAPAY ZEKA GELİŞTİRME MOTORU ---
         function triggerAIGlobalUpgrade() {
-            logAdminAction("Yapay zeka milî ve kültürel bilgi havuzlarını tarıyor...");
-            logSecurityLog("Sistem bütünlüğü taraması başlatıldı.");
+            logAdminAction("Yapay zeka millî ve kültürel bilgi havuzlarını tarıyor...");
             setTimeout(() => {
-                logAdminAction("Türkçe bilgi yarışmaları ve stüdyo dinamikleri optimize edildi.");
-                logSecurityLog("Güvenlik duvarı kararlılık testi %100 başarıyla tamamlandı.");
+                logAdminAction("Stüdyo dinamikleri optimize edildi.");
                 alert("Yapay zeka tüm algoritmaları başarıyla güncelledi!");
             }, 1200);
         }
 
         function forceAIQuestionRefresh() {
             fetchDynamicQuestions();
-            logAdminAction("Canlı Türkçe soru havuzu güncellendi ve taze sorular eklendi.");
+            logAdminAction("Canlı Türkçe soru havuzu güncellendi.");
         }
 
-        // --- DİNAMİK MİLLÎ SORU HAVUZU ---
         let dynamicMilPool = [];
-
         const milliSoruHavuzu = [
             { q: "Türkiye'nin başkenti neresidir?", opts: ["İstanbul", "İzmir", "Ankara", "Bursa"], ans: 2, p: "500 TL" },
             { q: "İstiklal Marşı'mızın şairi kimdir?", opts: ["Mehmet Akif Ersoy", "Yahya Kemal", "Nazım Hikmet", "Necip Fazıl"], ans: 0, p: "1.000 TL" },
@@ -561,7 +531,6 @@
             logAdminAction(`Millî ve kültürel ${dynamicMilPool.length} Türkçe soru sisteme yüklendi.`);
         }
 
-        // --- SES VE OYUN MOTORU ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let sfxVolume = 0.5; let bgmVolume = 0.3;
 
@@ -855,7 +824,7 @@
                 analyzeAudio(localStream);
                 
                 const safeMyName = myPlayer.replace(/[^a-zA-Z0-9]/g, '');
-                peer = new Peer("v25-voice-" + activeRoomId + "-" + safeMyName);
+                peer = new Peer("v26-voice-" + activeRoomId + "-" + safeMyName);
 
                 peer.on('open', () => {
                     btnList.forEach(btnId => { let b = document.getElementById(btnId); if(b) { b.innerText = "🎤 Sesli Sohbet Aktif"; b.style.background = "var(--success-dark)"; } });
@@ -869,9 +838,9 @@
                     
                     if(opp && opp !== "Bekleniyor...") {
                         const safeOppName = opp.replace(/[^a-zA-Z0-9]/g, '');
-                        let call = peer.call("v25-voice-" + activeRoomId + "-" + safeOppName, localStream);
+                        let call = peer.call("v26-voice-" + activeRoomId + "-" + safeOppName, localStream);
                         if(call) call.on('stream', s => document.getElementById('remoteAudio').srcObject = s);
-                        let conn = peer.connect("v25-voice-" + activeRoomId + "-" + safeOppName);
+                        let conn = peer.connect("v26-voice-" + activeRoomId + "-" + safeOppName);
                         if(conn) conn.on('open', () => setupPing(conn));
                     }
                 });
