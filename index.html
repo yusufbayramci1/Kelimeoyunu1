@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Oyun Odası - 3D Metaverse V26</title>
+    <title>Oyun Odası - 3D Metaverse V27</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -162,9 +162,9 @@
         input[type="range"] { width: 130px; accent-color: var(--primary); cursor: pointer; }
 
         /* GÜVENLİ GİZLİ YÖNETİCİ PANELİ */
-        .url-admin-modal { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 1, 6, 0.98); backdrop-filter: blur(30px); z-index: 999; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; text-align: center; overflow-y: auto; }
+        .url-admin-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(2, 1, 6, 0.98); backdrop-filter: blur(30px); z-index: 9999; display: none; flex-direction: column; padding: 20px; box-sizing: border-box; text-align: center; overflow-y: auto; }
         .admin-log-box { background: rgba(0,0,0,0.95); border: 1px solid var(--success); border-radius: 12px; padding: 12px; height: 160px; overflow-y: auto; font-family: monospace; font-size: 11px; color: var(--success); text-align: left; margin-top: 10px; }
-        .admin-sec-log { border-color: var(--danger); color: var(--danger); }
+        .admin-sec-log { color: var(--danger); }
         .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .admin-stat-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; text-align: center; }
         .admin-stat-num { font-size: 20px; font-weight: 900; color: var(--primary); margin-top: 5px; }
@@ -174,12 +174,21 @@
 
     <canvas id="canvas3D"></canvas>
 
-    <!-- GÜVENLİ GİZLİ YÖNETİCİ PANELİ (Parametre Tabanlı) -->
+    <!-- GÜVENLİ GİZLİ YÖNETİCİ PANELİ -->
     <div class="url-admin-modal" id="urlAdminModal">
         <h2 style="color: var(--primary); font-weight: 900; margin-bottom: 5px; letter-spacing: 2px;">🛡️ GÜVENLİK & KOMUTA MERKEZİ</h2>
-        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 15px;">Yapay Zeka Öz Geliştirme ve Gelişmiş Şifre / Log Yönetimi</p>
+        <p style="color: #94a3b8; font-size: 11px; margin-bottom: 15px;">Yönetici Erişim Doğrulama ve Stüdyo Kontrol Paneli</p>
+
+        <!-- ŞİFRE GİRİŞ EKRANI (Tarayıcı prompt yerine özel mobil uyumlu kutu) -->
+        <div id="adminAuthBox" style="max-width: 380px; margin: 40px auto; width: 100%; background: rgba(10,14,28,0.9); border: 2px solid var(--mil-gold); border-radius: 20px; padding: 25px; box-sizing: border-box;">
+            <p style="color: var(--mil-gold); font-weight: 900; font-size: 14px; margin-bottom: 12px;">🔐 YÖNETİCİ ŞİFRESİNİ GİRİN</p>
+            <input type="password" class="name-input" id="adminLoginPassInput" placeholder="ŞİFRE (VARSAYILAN: 1234)" style="font-size: 14px; text-transform: none; letter-spacing: 3px;">
+            <button class="btn-modern btn-primary" onclick="verifyAdminLogin()">GİRİŞ YAP 🔓</button>
+            <button class="btn-modern btn-action" onclick="closeUrlAdmin()" style="margin-bottom: 0;">İPTAL ET</button>
+        </div>
         
-        <div style="max-width: 520px; margin: 0 auto; width: 100%; text-align: left;">
+        <!-- DOĞRULANMIŞ YÖNETİCİ İÇERİĞİ -->
+        <div id="adminPanelContent" style="display: none; max-width: 520px; margin: 0 auto; width: 100%; text-align: left;">
             <div class="admin-grid">
                 <div class="admin-stat-card">
                     <span style="font-size: 10px; color: #94a3b8;">Millî Soru Havuzu</span>
@@ -195,7 +204,7 @@
                 <p style="color: var(--mil-gold); font-weight: 900; font-size: 12px; margin-bottom: 8px;">🔑 YÖNETİCİ ŞİFRE YÖNETİMİ</p>
                 <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
                     <span style="font-size: 10px; color: #94a3b8;">Yeni Yönetici Şifresi:</span>
-                    <input type="text" class="name-input" id="adminPassInput" value="1234" style="padding: 8px; font-size: 12px; margin: 0; width: 100%;">
+                    <input type="text" class="name-input" id="adminPassInput" value="1234" style="padding: 8px; font-size: 12px; margin: 0; width: 100%; text-transform: none;">
                 </div>
                 <button class="btn-modern btn-primary" onclick="saveAdminPass()" style="padding: 8px; font-size: 11px; margin-top: 8px;">ŞİFREYİ GÜNCELLE</button>
             </div>
@@ -207,7 +216,7 @@
 
                 <p style="font-size: 10px; color: #94a3b8; margin: 12px 0 3px 0;">Sistem Denetim Günlüğü:</p>
                 <div class="admin-log-box" id="adminLogBox">
-                    [Sistem]: Güvenli parametre modu devrede.<br>
+                    [Sistem]: Güvenlik ve komuta merkezi hazır.<br>
                 </div>
             </div>
 
@@ -246,7 +255,7 @@
         <audio id="remoteAudio" autoplay playsinline></audio>
 
         <div class="screen fade-in" id="hubBoard" style="display: flex;">
-            <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: var(--mil-gold); letter-spacing: 5px;">3D TÜRKÇE METAVERSE V26</span></div>
+            <div class="app-title">OYUN ODASI<br><span style="font-size: 12px; color: var(--mil-gold); letter-spacing: 5px;">3D TÜRKÇE METAVERSE V27</span></div>
             
             <div id="loginSection" style="width: 100%;">
                 <input type="text" class="name-input" id="playerNameInput" placeholder="ADINIZI VEYA RUMUZUNUZU YAZIN" autocomplete="off" maxlength="10">
@@ -437,7 +446,6 @@
 
             window.addEventListener('resize', onWindowResize);
             animate3D();
-            checkParamAdmin();
         }
 
         function animate3D() {
@@ -456,21 +464,31 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- GÜVENLİ URL PARAMETRESİ KONTROLÜ (404 Hatasını Engeller) ---
+        // --- GÜVENLİ URL KONTROLÜ (Hem ?admin=1 hem #1 hem /1 destekler) ---
         function checkParamAdmin() {
             const urlParams = new URLSearchParams(window.location.search);
-            // ?admin=1 yazıldığında panel açılır
-            if (urlParams.get('admin') === '1') {
-                let savedPass = localStorage.getItem('adminCustomPass') || '1234';
-                let entered = prompt("🛡️ Güvenli Komuta Merkezi\nLütfen yönetici şifresini girin:");
-                
-                if (entered === savedPass) {
-                    document.getElementById('urlAdminModal').style.display = 'flex';
-                    logAdminAction("Güvenlik doğrulaması başarılı.");
-                } else {
-                    alert("Hatalı şifre!");
-                    window.location.href = "https://yusufbayramci1.github.io/Kelimeoyunu1/";
-                }
+            const hash = window.location.hash;
+            const path = window.location.pathname;
+            
+            if (urlParams.get('admin') === '1' || hash === '#1' || path.endsWith('/1') || path.endsWith('/1/')) {
+                document.getElementById('urlAdminModal').style.display = 'flex';
+                document.getElementById('adminAuthBox').style.display = 'block';
+                document.getElementById('adminPanelContent').style.display = 'none';
+            }
+        }
+
+        function verifyAdminLogin() {
+            let savedPass = localStorage.getItem('adminCustomPass') || '1234';
+            let entered = document.getElementById('adminLoginPassInput').value.trim();
+            
+            if (entered === savedPass) {
+                document.getElementById('adminAuthBox').style.display = 'none';
+                document.getElementById('adminPanelContent').style.display = 'block';
+                document.getElementById('adminPassInput').value = savedPass;
+                logAdminAction("Yönetici oturumu başarıyla doğrulandı.");
+            } else {
+                alert("Hatalı şifre! (Varsayılan: 1234)");
+                document.getElementById('adminLoginPassInput').value = '';
             }
         }
 
@@ -484,8 +502,14 @@
 
         function closeUrlAdmin() {
             document.getElementById('urlAdminModal').style.display = 'none';
-            window.location.href = "https://yusufbayramci1.github.io/Kelimeoyunu1/";
+            window.history.replaceState({}, document.title, window.location.pathname.replace(/\/1\/?$/, '/'));
         }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkParamAdmin();
+            init3D();
+        });
+        window.addEventListener('hashchange', checkParamAdmin);
 
         function logAdminAction(text) {
             const box = document.getElementById('adminLogBox');
@@ -824,7 +848,7 @@
                 analyzeAudio(localStream);
                 
                 const safeMyName = myPlayer.replace(/[^a-zA-Z0-9]/g, '');
-                peer = new Peer("v26-voice-" + activeRoomId + "-" + safeMyName);
+                peer = new Peer("v27-voice-" + activeRoomId + "-" + safeMyName);
 
                 peer.on('open', () => {
                     btnList.forEach(btnId => { let b = document.getElementById(btnId); if(b) { b.innerText = "🎤 Sesli Sohbet Aktif"; b.style.background = "var(--success-dark)"; } });
@@ -838,9 +862,9 @@
                     
                     if(opp && opp !== "Bekleniyor...") {
                         const safeOppName = opp.replace(/[^a-zA-Z0-9]/g, '');
-                        let call = peer.call("v26-voice-" + activeRoomId + "-" + safeOppName, localStream);
+                        let call = peer.call("v27-voice-" + activeRoomId + "-" + safeOppName, localStream);
                         if(call) call.on('stream', s => document.getElementById('remoteAudio').srcObject = s);
-                        let conn = peer.connect("v26-voice-" + activeRoomId + "-" + safeOppName);
+                        let conn = peer.connect("v27-voice-" + activeRoomId + "-" + safeOppName);
                         if(conn) conn.on('open', () => setupPing(conn));
                     }
                 });
