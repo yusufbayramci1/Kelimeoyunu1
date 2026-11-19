@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Ateş & Su - 3D Tapınak Online</title>
+  <title>Ateş & Su 3D - Tapınak Online</title>
+  <!-- Three.js Gerçek 3D WebGL Motoru -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Firebase Realtime Database SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <style>
@@ -21,103 +24,175 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #09080d;
-      color: #f4f1ea;
+      background: #08070c;
+      color: #f6f2eb;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* --- 3D ATMOSFERLİ TAPINAK LOBİSİ --- */
-    #lobby {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 20;
-      gap: 14px;
-      overflow-y: auto;
-    }
-
-    #lobbyBgCanvas {
+    /* Tam Ekran 3D WebGL Sahnesi (Hem Menüde Hem Oyunda Canlı) */
+    #viewport3d {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100%;
-      z-index: -1;
-      pointer-events: none;
+      z-index: 1;
+      display: block;
     }
 
-    .brand-header {
-      text-align: center;
+    /* --- ANA MENÜ & BEKLEME ODASI --- */
+    #lobbyOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      justify-content: space-between;
+      padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+      background: radial-gradient(circle at 50% 45%, rgba(10, 8, 16, 0.18) 0%, rgba(8, 7, 12, 0.82) 100%);
+      overflow-y: auto;
     }
 
-    .brand-pill {
-      font-size: 11px;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      color: #ffd54f;
-      background: rgba(255, 213, 79, 0.12);
-      border: 1px solid rgba(255, 213, 79, 0.3);
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-weight: 800;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-    }
-
-    .title {
-      font-size: clamp(34px, 7.5vw, 52px);
-      font-weight: 900;
-      letter-spacing: 2px;
+    .top-bar {
+      width: 100%;
+      max-width: 440px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      text-shadow: 0 6px 18px rgba(0, 0, 0, 0.85);
+      justify-content: space-between;
+      gap: 8px;
     }
-    .title .fire {
-      background: linear-gradient(180deg, #ffd54f 0%, #ff7043 45%, #d84315 100%);
+
+    .nick-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 13, 24, 0.78);
+      border: 1px solid rgba(255, 213, 79, 0.3);
+      border-radius: 999px;
+      padding: 5px 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .nick-wrap input {
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      width: 112px;
+      outline: none;
+      touch-action: manipulation;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .online-pill {
+      font-size: 11px;
+      font-weight: 800;
+      color: #69f0ae;
+      background: rgba(16, 13, 24, 0.78);
+      border: 1px solid rgba(105, 240, 174, 0.3);
+      border-radius: 999px;
+      padding: 6px 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(10px);
+    }
+
+    .dot-live {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #00e676;
+      box-shadow: 0 0 8px #00e676;
+    }
+
+    .hero-title {
+      text-align: center;
+      margin: 6px 0;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: #ffd54f;
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 213, 79, 0.35);
+      padding: 3px 12px;
+      border-radius: 999px;
+      margin-bottom: 4px;
+    }
+
+    .hero-title h1 {
+      font-size: clamp(32px, 8vw, 52px);
+      font-weight: 900;
+      letter-spacing: 2px;
+      line-height: 1.05;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.9));
+    }
+    .t-fire {
+      background: linear-gradient(180deg, #fff176 0%, #ff7043 45%, #d84315 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 18px rgba(255, 87, 34, 0.55));
     }
-    .title .amp {
-      color: #e0d6eb;
-      font-size: 0.65em;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
-    }
-    .title .water {
+    .t-amp { color: #ffd54f; font-size: 0.7em; margin: 0 4px; }
+    .t-water {
       background: linear-gradient(180deg, #e1f5fe 0%, #4fc3f7 45%, #0277bd 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 18px rgba(41, 182, 246, 0.55));
     }
 
-    .panel {
+    .glass-card {
       width: 100%;
-      max-width: 410px;
-      background: linear-gradient(180deg, rgba(35, 29, 46, 0.84), rgba(16, 13, 23, 0.92));
-      border: 1px solid rgba(255, 213, 79, 0.28);
+      max-width: 430px;
+      background: linear-gradient(180deg, rgba(28, 23, 39, 0.84), rgba(13, 11, 20, 0.92));
+      border: 1px solid rgba(255, 213, 79, 0.26);
       border-radius: 22px;
-      padding: 20px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      box-shadow:
-        0 22px 50px rgba(0, 0, 0, 0.78),
-        0 2px 0 rgba(255, 213, 79, 0.15) inset,
-        0 -3px 0 rgba(0, 0, 0, 0.6) inset;
-      backdrop-filter: blur(12px);
+      gap: 11px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(14px);
     }
 
-    /* 3D Kabartmalı Butonlar */
+    /* Menü Sekmeleri */
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      background: rgba(0, 0, 0, 0.42);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+    }
+    .tab-btn {
+      border: none;
+      background: transparent;
+      color: #aaa0b8;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 9px 6px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: linear-gradient(180deg, #433757, #2b2338);
+      color: #ffd54f;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    }
+
+    .tab-pane { display: none; flex-direction: column; gap: 10px; }
+    .tab-pane.active { display: flex; }
+
+    /* 3D Butonlar */
     .btn {
       width: 100%;
-      padding: 14px 16px;
+      padding: 13px 15px;
       border: none;
       border-radius: 14px;
       font-size: 15px;
@@ -128,113 +203,139 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      position: relative;
-      transition: transform 0.1s, filter 0.15s, opacity 0.2s;
+      transition: transform 0.1s, opacity 0.2s, filter 0.15s;
       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     }
     .btn:active:not(:disabled) { transform: translateY(2px) scale(0.985); }
-    .btn:disabled {
-      opacity: 0.42;
-      cursor: not-allowed;
-      filter: grayscale(0.45);
-    }
+    .btn:disabled { opacity: 0.42; cursor: not-allowed; filter: grayscale(0.45); }
 
     .btn-match {
-      background: linear-gradient(135deg, #ff6d2e 0%, #8e24aa 50%, #039be5 100%);
-      box-shadow: 0 5px 0 #311042, 0 10px 22px rgba(142, 36, 170, 0.4);
-      font-size: 16px;
+      background: linear-gradient(135deg, #ff6d2e 0%, #8e24aa 50%, #0288d1 100%);
+      box-shadow: 0 5px 0 #2e1040, 0 10px 22px rgba(142, 36, 170, 0.35);
       padding: 15px;
+      font-size: 16px;
     }
     .btn-fire {
       background: linear-gradient(180deg, #ff7043, #d84315);
-      box-shadow: 0 4px 0 #7f1d06, 0 8px 18px rgba(216, 67, 21, 0.35);
+      box-shadow: 0 4px 0 #7a1c05;
     }
     .btn-water {
       background: linear-gradient(180deg, #29b6f6, #0277bd);
-      box-shadow: 0 4px 0 #013d63, 0 8px 18px rgba(2, 119, 189, 0.35);
-    }
-    .btn-ready-off {
-      background: linear-gradient(180deg, #455a64, #263238);
-      box-shadow: 0 4px 0 #141b1f;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-    .btn-ready-on {
-      background: linear-gradient(180deg, #00e676, #00a152);
-      box-shadow: 0 4px 0 #005229, 0 0 22px rgba(0, 230, 118, 0.45);
-      color: #071f11;
-      text-shadow: none;
+      box-shadow: 0 4px 0 #013d63;
     }
     .btn-start {
       background: linear-gradient(180deg, #ffd54f, #ff8f00);
-      box-shadow: 0 4px 0 #8c4b00, 0 8px 20px rgba(255, 143, 0, 0.4);
-      color: #1a1205;
+      box-shadow: 0 4px 0 #8a4a00, 0 0 20px rgba(255, 160, 0, 0.4);
+      color: #1c1205;
       text-shadow: none;
       font-size: 16px;
     }
+    .btn-ready-off {
+      background: linear-gradient(180deg, #455a64, #263238);
+      box-shadow: 0 4px 0 #131a1d;
+    }
+    .btn-ready-on {
+      background: linear-gradient(180deg, #00e676, #00a152);
+      box-shadow: 0 4px 0 #005229, 0 0 20px rgba(0, 230, 118, 0.45);
+      color: #062111;
+      text-shadow: none;
+    }
     .btn-ghost {
-      background: rgba(255, 255, 255, 0.07);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       font-size: 13px;
       padding: 10px;
       box-shadow: none;
     }
 
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #9e90ad;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 1.5px;
-    }
-    .divider::before, .divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    }
-
     .join-row { display: flex; gap: 8px; }
-
     .code-input {
       flex: 1;
-      padding: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 213, 79, 0.28);
-      background: rgba(0, 0, 0, 0.48);
+      padding: 11px;
+      border-radius: 13px;
+      border: 1px solid rgba(255, 213, 79, 0.3);
+      background: rgba(0, 0, 0, 0.5);
       color: #ffd54f;
       font-size: 20px;
       font-weight: 900;
       text-align: center;
       letter-spacing: 6px;
       outline: none;
-      box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.65);
       touch-action: manipulation;
       user-select: text;
       -webkit-user-select: text;
     }
 
-    /* Bekleme Odası Kartları */
-    .room-header {
+    /* Canlı Açık Odalar Listesi */
+    .room-list {
+      max-height: 175px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 2px;
+    }
+    .room-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       background: rgba(0, 0, 0, 0.42);
-      padding: 11px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 213, 79, 0.2);
-      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
     }
-    .room-tag { font-size: 12px; color: #ffd54f; font-weight: 800; }
-    .room-code-pill {
+    .room-item-info { display: flex; flex-direction: column; gap: 2px; }
+    .room-item-name { font-size: 14px; font-weight: 800; color: #fff; }
+    .room-item-sub { font-size: 11px; color: #aaa0b8; }
+    .btn-mini-join {
+      border: none;
+      border-radius: 9px;
+      padding: 8px 14px;
+      background: linear-gradient(180deg, #29b6f6, #0277bd);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .empty-list {
+      text-align: center;
+      font-size: 13px;
+      color: #9e93ad;
+      padding: 20px 10px;
+      background: rgba(0, 0, 0, 0.28);
+      border-radius: 12px;
+    }
+
+    /* Bekleme Odası */
+    .room-top-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 213, 79, 0.25);
+      border-radius: 14px;
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    .room-code-big {
       font-size: 24px;
       font-weight: 900;
       letter-spacing: 4px;
-      color: #fff;
-      text-shadow: 0 0 12px rgba(255, 213, 79, 0.6);
+      color: #ffd54f;
       user-select: text;
       -webkit-user-select: text;
+    }
+    .share-btn {
+      border: none;
+      background: rgba(255, 213, 79, 0.18);
+      border: 1px solid rgba(255, 213, 79, 0.4);
+      color: #ffd54f;
+      padding: 8px 11px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
     .slots-grid {
@@ -242,276 +343,318 @@
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
-
-    .player-slot {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.45));
-      border-radius: 16px;
-      padding: 14px 10px;
+    .slot-card {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      padding: 12px 8px;
+      text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px;
-      border: 2px solid rgba(255, 255, 255, 0.08);
-      text-align: center;
-      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
+      gap: 5px;
     }
-    .player-slot.fire-active {
-      border-color: rgba(255, 112, 67, 0.75);
-      background: linear-gradient(180deg, rgba(255, 87, 34, 0.16), rgba(0, 0, 0, 0.45));
-    }
-    .player-slot.water-active {
-      border-color: rgba(79, 195, 247, 0.75);
-      background: linear-gradient(180deg, rgba(41, 182, 246, 0.16), rgba(0, 0, 0, 0.45));
-    }
-
-    .slot-icon { font-size: 30px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)); }
-    .slot-role { font-size: 14px; font-weight: 800; }
-    .slot-status {
+    .slot-card.fire-on { border-color: rgba(255, 112, 67, 0.8); background: rgba(255, 87, 34, 0.12); }
+    .slot-card.water-on { border-color: rgba(79, 195, 247, 0.8); background: rgba(41, 182, 246, 0.12); }
+    .slot-name { font-size: 13px; font-weight: 800; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .slot-badge {
       font-size: 11px;
       font-weight: 800;
-      padding: 4px 10px;
+      padding: 3px 9px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.1);
       color: #ccc;
     }
-    .slot-status.ready { background: rgba(0, 230, 118, 0.24); color: #69f0ae; }
-    .slot-status.host { background: rgba(255, 213, 79, 0.22); color: #ffd54f; }
+    .slot-badge.ready { background: rgba(0, 230, 118, 0.22); color: #69f0ae; }
+    .slot-badge.host { background: rgba(255, 213, 79, 0.22); color: #ffd54f; }
 
-    #statusBox {
-      text-align: center;
-      font-size: 13px;
+    .level-picker {
+      display: flex;
+      gap: 6px;
+    }
+    .lvl-chip {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(0, 0, 0, 0.38);
+      color: #bbb;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .lvl-chip.selected {
+      background: rgba(255, 213, 79, 0.22);
+      border-color: #ffd54f;
       color: #ffd54f;
-      min-height: 18px;
-      line-height: 1.4;
-      max-width: 410px;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
     }
 
-    .pulse-dot {
+    #statusBar {
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffd54f;
+      text-align: center;
+      min-height: 20px;
+      text-shadow: 0 2px 6px #000;
+      max-width: 430px;
+    }
+
+    .radar-spinner {
       display: inline-block;
-      width: 8px;
-      height: 8px;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 213, 79, 0.3);
+      border-top-color: #ffd54f;
       border-radius: 50%;
-      background: #ffd54f;
+      animation: spin 0.75s linear infinite;
       margin-right: 6px;
-      animation: pulse 1.1s infinite ease-in-out;
+      vertical-align: -2px;
     }
-    @keyframes pulse {
-      0%, 100% { transform: scale(0.8); opacity: 0.4; }
-      50% { transform: scale(1.25); opacity: 1; }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* --- OYUN EKRANI --- */
-    #gameWrapper {
+    /* --- OYUN HUD VE KONTROLLERİ --- */
+    #gameHudOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
       display: none;
-      width: 100%;
-      height: 100dvh;
       flex-direction: column;
       justify-content: space-between;
-      background: #09080d;
+      pointer-events: none;
     }
 
-    #hud {
+    #hudTop {
+      pointer-events: auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 6px 12px;
-      background: rgba(0, 0, 0, 0.72);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: max(8px, env(safe-area-inset-top)) 12px 8px;
+      background: linear-gradient(180deg, rgba(8, 7, 12, 0.82), rgba(8, 7, 12, 0));
       font-size: 13px;
-      font-weight: 700;
-      gap: 8px;
-      flex-shrink: 0;
+      font-weight: 800;
+      gap: 6px;
     }
-
-    .hud-left, .hud-right { display: flex; align-items: center; gap: 8px; }
-
-    .badge {
-      padding: 4px 10px;
+    .hud-group { display: flex; align-items: center; gap: 6px; }
+    .hud-pill {
+      padding: 5px 10px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(20, 16, 28, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(8px);
       white-space: nowrap;
     }
-    .badge.fire { background: rgba(255, 87, 34, 0.28); color: #ffab91; }
-    .badge.water { background: rgba(41, 182, 246, 0.28); color: #81d4fa; }
-
-    .hud-btn {
-      background: rgba(255, 255, 255, 0.15);
-      border: none;
+    .hud-pill.fire { border-color: rgba(255, 112, 67, 0.6); color: #ffab91; }
+    .hud-pill.water { border-color: rgba(79, 195, 247, 0.6); color: #81d4fa; }
+    .hud-icon-btn {
+      background: rgba(20, 16, 28, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       color: #fff;
-      padding: 5px 10px;
-      border-radius: 8px;
+      padding: 6px 10px;
+      border-radius: 10px;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
     }
 
-    #canvasContainer {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-      padding: 4px;
-    }
-
-    canvas#game {
-      max-width: 100%;
-      max-height: 100%;
-      aspect-ratio: 16 / 9;
-      background: #14111a;
-      border-radius: 12px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85);
-      border: 2px solid #443952;
-    }
-
     #toast {
-      position: absolute;
-      top: 14px;
+      position: fixed;
+      top: 56px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 12, 20, 0.92);
-      border: 1px solid rgba(255, 213, 79, 0.45);
-      padding: 8px 16px;
+      z-index: 15;
+      background: rgba(14, 11, 20, 0.92);
+      border: 1px solid rgba(255, 213, 79, 0.5);
+      padding: 8px 18px;
       border-radius: 999px;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
+      color: #fff;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s;
       white-space: nowrap;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
     }
     #toast.show { opacity: 1; }
 
-    /* Mobil Kontroller */
-    #controls {
+    /* Multi-Touch Mobil Kontrol Çubuğu */
+    #touchControls {
+      pointer-events: none;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: space-between;
-      padding: 10px 18px calc(12px + env(safe-area-inset-bottom));
-      background: rgba(0, 0, 0, 0.45);
-      flex-shrink: 0;
+      padding: 12px 18px calc(16px + env(safe-area-inset-bottom));
     }
 
-    .dpad { display: flex; gap: 14px; }
-    .action-pad { display: flex; gap: 12px; align-items: center; }
+    /* Kaydırılabilir Sol/Sağ Tek Pad (Parmak kayınca asla kesilmez) */
+    #dpadPad {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+      padding: 6px;
+      border-radius: 999px;
+      background: rgba(12, 10, 18, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(6px);
+    }
 
-    .ctrl-btn {
-      width: 66px;
-      height: 66px;
+    .pad-btn {
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.25);
-      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
+      border: 2px solid rgba(255, 255, 255, 0.26);
+      background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08));
       color: #fff;
       font-size: 24px;
       font-weight: 900;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
     }
-    .ctrl-btn.pressed {
-      background: rgba(255, 255, 255, 0.38);
-      transform: scale(0.93);
-    }
-
-    .ctrl-jump {
-      width: 74px;
-      height: 74px;
-      background: radial-gradient(circle at 35% 30%, rgba(255, 193, 7, 0.35), rgba(255, 111, 0, 0.16));
-      border-color: rgba(255, 213, 79, 0.65);
+    .pad-btn.active {
+      background: radial-gradient(circle at 35% 30%, rgba(255, 213, 79, 0.55), rgba(255, 112, 67, 0.35));
+      border-color: #ffd54f;
+      transform: scale(0.94);
     }
 
-    .ctrl-switch {
+    .right-actions {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .jump-btn {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      border: 2.5px solid rgba(255, 213, 79, 0.75);
+      background: radial-gradient(circle at 35% 30%, rgba(255, 193, 7, 0.42), rgba(255, 87, 34, 0.2));
+      color: #fff;
+      font-size: 26px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(6px);
+    }
+    .jump-btn.active {
+      background: radial-gradient(circle at 35% 30%, rgba(255, 213, 79, 0.8), rgba(255, 87, 34, 0.55));
+      transform: scale(0.92);
+    }
+
+    .switch-btn {
       display: none;
       width: 58px;
       height: 58px;
+      border-radius: 50%;
+      border: 2px solid rgba(206, 147, 216, 0.7);
+      background: rgba(142, 36, 170, 0.4);
+      color: #fff;
       font-size: 20px;
-      background: rgba(156, 39, 176, 0.32);
-      border-color: rgba(206, 147, 216, 0.65);
-    }
-
-    @media (max-height: 460px) and (orientation: landscape) {
-      #controls {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: transparent;
-        pointer-events: none;
-        padding: 8px 18px;
-      }
-      .ctrl-btn {
-        pointer-events: auto;
-        width: 58px;
-        height: 58px;
-        background: rgba(20, 18, 24, 0.6);
-      }
-      .ctrl-jump { width: 64px; height: 64px; }
+      align-items: center;
+      justify-content: center;
     }
   </style>
 </head>
 <body>
 
-  <!-- LOBİ VE BEKLEME ODASI -->
-  <div id="lobby">
-    <canvas id="lobbyBgCanvas"></canvas>
+  <!-- GERÇEK 3D SAHNE -->
+  <canvas id="viewport3d"></canvas>
+  <div id="toast"></div>
 
-    <div class="brand-header">
-      <div class="brand-pill">✨ 3D TAPINAK MACERASI • ONLINE</div>
-      <div class="title">
-        <span class="fire">ATEŞ</span>
-        <span class="amp">&</span>
-        <span class="water">SU</span>
+  <!-- ANA MENÜ & BEKLEME ODASI -->
+  <div id="lobbyOverlay">
+    <div class="top-bar">
+      <div class="nick-wrap">
+        <span>👤</span>
+        <input id="nickInput" maxlength="12" placeholder="Adın..." />
+      </div>
+      <div class="online-pill">
+        <span class="dot-live"></span>
+        <span id="openCountText">0 Açık Oda</span>
       </div>
     </div>
 
-    <!-- EKRAN 1: ANA MENÜ -->
-    <div class="panel" id="menuView">
-      <button class="btn btn-match" id="btnQuickMatch">⚡ Rastgele Eşleştir</button>
-
-      <div class="divider">VEYA ÖZEL ODA</div>
-
-      <button class="btn btn-fire" id="btnCreatePrivate">🔥 Özel Oda Kur (Ateş)</button>
-
-      <div class="join-row">
-        <input type="tel" maxlength="4" id="inputCode" class="code-input" placeholder="KOD" />
-        <button class="btn btn-water" id="btnJoinCode" style="width:auto; padding:0 18px;">💧 Katıl</button>
-      </div>
-
-      <button class="btn btn-ghost" id="btnSolo">🎮 Tek Cihazda Test Et (Solo)</button>
+    <div class="hero-title">
+      <div class="hero-badge">🔥 3D GERÇEKÇİ TAPINAK • ONLINE 💧</div>
+      <h1><span class="t-fire">ATEŞ</span><span class="t-amp">&</span><span class="t-water">SU</span></h1>
     </div>
 
-    <!-- EKRAN 2: BEKLEME ODASI (HAZIR & BAŞLAT) -->
-    <div class="panel" id="roomView" style="display:none;">
-      <div class="room-header">
-        <div>
-          <div class="room-tag" id="roomTypeLabel">ÖZEL ODA</div>
-          <div style="font-size:12px; color:#9e90ad;">Kodu arkadaşınla paylaş</div>
+    <!-- MENÜ KARTI -->
+    <div class="glass-card" id="menuCard">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="quick">⚡ Eşleştir</button>
+        <button class="tab-btn" data-tab="rooms">🌐 Odalar</button>
+        <button class="tab-btn" data-tab="private">🔒 Özel Oda</button>
+      </div>
+
+      <!-- SEKME 1: HIZLI EŞLEŞTİR -->
+      <div class="tab-pane active" id="tab-quick">
+        <button class="btn btn-match" id="btnQuickMatch">⚡ Rastgele Oyuncu Bul</button>
+        <button class="btn btn-ghost" id="btnSolo">🎮 Tek Cihazda Test Et (Solo 3D)</button>
+      </div>
+
+      <!-- SEKME 2: CANLI AÇIK ODALAR -->
+      <div class="tab-pane" id="tab-rooms">
+        <div class="room-list" id="publicRoomList">
+          <div class="empty-list">Açık oda aranıyor...</div>
         </div>
-        <div class="room-code-pill" id="roomCodeDisplay">----</div>
+        <button class="btn btn-fire" id="btnCreatePublic">🔥 Herkese Açık Oda Aç</button>
+      </div>
+
+      <!-- SEKME 3: ÖZEL ODA -->
+      <div class="tab-pane" id="tab-private">
+        <button class="btn btn-fire" id="btnCreatePrivate">🔥 Özel Oda Kur (Kod + Link)</button>
+        <div class="join-row">
+          <input type="tel" maxlength="4" id="inputCode" class="code-input" placeholder="0000" />
+          <button class="btn btn-water" id="btnJoinCode" style="width:auto; padding:0 18px;">💧 Katıl</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BEKLEME ODASI KARTI (HAZIR & BAŞLAT) -->
+    <div class="glass-card" id="roomCard" style="display:none;">
+      <div class="room-top-strip">
+        <div>
+          <div style="font-size:11px; color:#b3a7c2; font-weight:800;" id="roomTypeLabel">ÖZEL ODA</div>
+          <div class="room-code-big" id="roomCodeDisplay">----</div>
+        </div>
+        <button class="share-btn" id="btnShareLink">🔗 Linki Kopyala</button>
       </div>
 
       <div class="slots-grid">
-        <div class="player-slot fire-active" id="slotFire">
-          <div class="slot-icon">🔥</div>
-          <div class="slot-role" style="color:#ff8a65;">Ateş (Kurucu)</div>
-          <div class="slot-status host" id="fireStatus">Odada</div>
+        <div class="slot-card fire-on" id="slotFire">
+          <div style="font-size:28px;">🔥</div>
+          <div class="slot-name" id="fireName" style="color:#ffab91;">Ateş</div>
+          <div class="slot-badge host">Kurucu</div>
         </div>
-
-        <div class="player-slot" id="slotWater">
-          <div class="slot-icon">💧</div>
-          <div class="slot-role" style="color:#4fc3f7;">Su (Misafir)</div>
-          <div class="slot-status" id="waterStatus">Bekleniyor...</div>
+        <div class="slot-card" id="slotWater">
+          <div style="font-size:28px;">💧</div>
+          <div class="slot-name" id="waterName" style="color:#81d4fa;">Bekleniyor...</div>
+          <div class="slot-badge" id="waterBadge">Boş</div>
         </div>
       </div>
 
+      <!-- Kurucu için Bölüm Seçici -->
+      <div id="levelPickerWrap" style="display:none; flex-direction:column; gap:5px;">
+        <div style="font-size:11px; color:#b3a7c2; font-weight:800;">BAŞLANGIÇ BÖLÜMÜ</div>
+        <div class="level-picker">
+          <button class="lvl-chip selected" data-lvl="0">1. Tapınak</button>
+          <button class="lvl-chip" data-lvl="1">2. Köprüler</button>
+          <button class="lvl-chip" data-lvl="2">3. Mahzen</button>
+        </div>
+      </div>
+
+      <!-- Kurucu Başlat Butonu (Misafir hazır vermeden kilitli!) -->
       <button class="btn btn-start" id="btnStartGame" style="display:none;" disabled>
         ⏳ Su Oyuncusu Bekleniyor...
       </button>
 
+      <!-- Misafir Hazır Butonu -->
       <button class="btn btn-ready-off" id="btnToggleReady" style="display:none;">
         ✋ Hazır Ver
       </button>
@@ -519,43 +662,39 @@
       <button class="btn btn-ghost" id="btnLeaveRoom">← Odadan Ayrıl</button>
     </div>
 
-    <div id="statusBox">Mobil veri ve Wi-Fi üzerinden doğrudan eşleşebilirsiniz.</div>
+    <div id="statusBar">3D Tapınak hazır. Mobil veri ve Wi-Fi'da sorunsuz bağlanır.</div>
   </div>
 
-  <!-- OYUN EKRANI -->
-  <div id="gameWrapper">
-    <div id="hud">
-      <div class="hud-left">
-        <span class="badge" id="roleBadge">🔥 Ateş</span>
-        <span id="levelLabel">1. Tapınak Girişi</span>
+  <!-- OYUN İÇİ HUD VE DOKUNMATİK KONTROLLER -->
+  <div id="gameHudOverlay">
+    <div id="hudTop">
+      <div class="hud-group">
+        <span class="hud-pill fire" id="rolePill">🔥 Ateş</span>
+        <span class="hud-pill" id="levelPill">1. Tapınak</span>
       </div>
-      <div class="hud-right">
-        <span id="gemLabel">💎 0/4</span>
-        <button class="hud-btn" id="btnMute">🔊</button>
-        <button class="hud-btn" id="btnRestart">↻ Yenile</button>
+      <div class="hud-group">
+        <span class="hud-pill" id="gemPill">💎 0/4</span>
+        <button class="hud-icon-btn" id="btnMute">🔊</button>
+        <button class="hud-icon-btn" id="btnRestart">↻</button>
+        <button class="hud-icon-btn" id="btnExitGame">✕</button>
       </div>
     </div>
 
-    <div id="canvasContainer">
-      <canvas id="game" width="800" height="450"></canvas>
-      <div id="toast"></div>
-    </div>
-
-    <div id="controls">
-      <div class="dpad">
-        <button class="ctrl-btn" id="btnLeft">◀</button>
-        <button class="ctrl-btn" id="btnRight">▶</button>
+    <div id="touchControls">
+      <div id="dpadPad">
+        <div class="pad-btn" id="visualLeft">◀</div>
+        <div class="pad-btn" id="visualRight">▶</div>
       </div>
-      <div class="action-pad">
-        <button class="ctrl-btn ctrl-switch" id="btnSwitch" title="Karakter Değiştir">🔄</button>
-        <button class="ctrl-btn ctrl-jump" id="btnJump">▲</button>
+      <div class="right-actions">
+        <button class="switch-btn" id="btnSwitch">🔄</button>
+        <button class="jump-btn" id="btnJump">▲</button>
       </div>
     </div>
   </div>
 
   <script>
     // =========================================================================
-    // 1. FIREBASE YAPILANDIRMASI
+    // 1. FIREBASE YAPILANDIRMASI (Senin Projen - İndeks Hatasız Altyapı)
     // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyCV8vsi4zIZbMQyBqyrbnu6liJkyTk_rcI",
@@ -576,272 +715,113 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.database();
         return true;
-      } catch (err) {
-        setStatus("Firebase başlatma hatası: " + err.message);
+      } catch (e) {
+        setStatus("Bağlantı başlatılamadı: " + e.message);
         return false;
       }
     }
 
-    // =========================================================================
-    // 2. CANLI LOBİ ARKA PLAN SAHNESİ
-    // =========================================================================
-    const lobbyCanvas = document.getElementById("lobbyBgCanvas");
-    const lCtx = lobbyCanvas.getContext("2d");
-    let lobbySparks = [];
-    for (let i = 0; i < 45; i++) {
-      lobbySparks.push({
-        x: Math.random(),
-        y: Math.random(),
-        vy: 0.001 + Math.random() * 0.0025,
-        size: 1.5 + Math.random() * 2.5,
-        side: i % 2 === 0 ? "fire" : "water"
-      });
-    }
-
-    function renderLobbyBackground(t) {
-      if (document.getElementById("lobby").style.display === "none") return;
-      const w = (lobbyCanvas.width = window.innerWidth);
-      const h = (lobbyCanvas.height = window.innerHeight);
-
-      const grad = lCtx.createLinearGradient(0, 0, w, h);
-      grad.addColorStop(0, "#1c1218");
-      grad.addColorStop(0.5, "#13101a");
-      grad.addColorStop(1, "#0e1824");
-      lCtx.fillStyle = grad;
-      lCtx.fillRect(0, 0, w, h);
-
-      // Sol Ateş Halesi & Sağ Su Halesi
-      const fGlow = lCtx.createRadialGradient(w * 0.18, h * 0.35, 10, w * 0.18, h * 0.35, w * 0.42);
-      fGlow.addColorStop(0, "rgba(255, 87, 34, 0.24)");
-      fGlow.addColorStop(1, "rgba(0,0,0,0)");
-      lCtx.fillStyle = fGlow;
-      lCtx.fillRect(0, 0, w, h);
-
-      const wGlow = lCtx.createRadialGradient(w * 0.82, h * 0.35, 10, w * 0.82, h * 0.35, w * 0.42);
-      wGlow.addColorStop(0, "rgba(41, 182, 246, 0.24)");
-      wGlow.addColorStop(1, "rgba(0,0,0,0)");
-      lCtx.fillStyle = wGlow;
-      lCtx.fillRect(0, 0, w, h);
-
-      // 3D Tapınak Zemin Perspektif Izgarası
-      const floorY = h * 0.78;
-      const floorGrad = lCtx.createLinearGradient(0, floorY, 0, h);
-      floorGrad.addColorStop(0, "#241d2e");
-      floorGrad.addColorStop(1, "#0b0910");
-      lCtx.fillStyle = floorGrad;
-      lCtx.fillRect(0, floorY, w, h - floorY);
-
-      lCtx.strokeStyle = "rgba(255, 213, 79, 0.08)";
-      lCtx.lineWidth = 1;
-      for (let i = -6; i <= 6; i++) {
-        lCtx.beginPath();
-        lCtx.moveTo(w / 2 + i * 50, floorY);
-        lCtx.lineTo(w / 2 + i * 140, h);
-        lCtx.stroke();
-      }
-
-      // Uçuşan Element Kıvılcımları
-      for (const s of lobbySparks) {
-        s.y -= s.vy;
-        if (s.y < 0) {
-          s.y = 1;
-          s.x = Math.random();
-        }
-        const sx = s.x * w + Math.sin(t * 0.002 + s.y * 10) * 14;
-        const sy = s.y * h;
-        lCtx.fillStyle = s.side === "fire" ? "rgba(255, 138, 101, 0.65)" : "rgba(129, 212, 250, 0.65)";
-        lCtx.beginPath();
-        lCtx.arc(sx, sy, s.size, 0, Math.PI * 2);
-        lCtx.fill();
-      }
-
-      requestAnimationFrame(renderLobbyBackground);
-    }
-    requestAnimationFrame(renderLobbyBackground);
+    // Kullanıcı Adı (Kaydedilir)
+    const nickInput = document.getElementById("nickInput");
+    nickInput.value = localStorage.getItem("ates_su_nick") || ("Oyuncu" + Math.floor(10 + Math.random() * 89));
+    nickInput.addEventListener("input", () => {
+      localStorage.setItem("ates_su_nick", nickInput.value.trim() || "Oyuncu");
+    });
+    function getNick() { return (nickInput.value || "").trim() || "Oyuncu"; }
 
     // =========================================================================
-    // 3. WEB AUDIO API SES EFEKTLERİ MOTORU
+    // 2. WEB AUDIO SES EFEKTLERİ
     // =========================================================================
     const SoundFX = {
       ctx: null,
       muted: false,
       unlock() {
         if (!this.ctx) {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (AudioCtx) this.ctx = new AudioCtx();
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) this.ctx = new AC();
         }
         if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
       },
-      playJump(isFire = true) {
+      tone(freq1, freq2, dur, type, vol, delay = 0) {
         if (this.muted) return;
         this.unlock();
         if (!this.ctx) return;
-        const now = this.ctx.currentTime;
+        const now = this.ctx.currentTime + delay;
         const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = isFire ? "triangle" : "sine";
-        const base = isFire ? 190 : 230;
-        osc.frequency.setValueAtTime(base, now);
-        osc.frequency.exponentialRampToValueAtTime(base * 2.3, now + 0.14);
-        gain.gain.setValueAtTime(0.14, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.16);
+        const g = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq1, now);
+        if (freq2) osc.frequency.exponentialRampToValueAtTime(freq2, now + dur);
+        g.gain.setValueAtTime(vol, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        osc.connect(g); g.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + dur + 0.02);
       },
-      playGem() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        [660, 990, 1320].forEach((freq, idx) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = "sine";
-          const t = now + idx * 0.045;
-          osc.frequency.setValueAtTime(freq, t);
-          gain.gain.setValueAtTime(0.13, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(t);
-          osc.stop(t + 0.19);
-        });
-      },
-      playDoor(opening = true) {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(opening ? 130 : 240, now);
-        osc.frequency.linearRampToValueAtTime(opening ? 270 : 120, now + 0.22);
-        gain.gain.setValueAtTime(0.09, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.25);
-      },
-      playReady() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        [523.25, 659.25].forEach((freq, i) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = "triangle";
-          osc.frequency.setValueAtTime(freq, now + i * 0.07);
-          gain.gain.setValueAtTime(0.12, now + i * 0.07);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.15);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(now + i * 0.07);
-          osc.stop(now + i * 0.07 + 0.16);
-        });
-      },
-      playDeath() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(260, now);
-        osc.frequency.exponentialRampToValueAtTime(65, now + 0.35);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        osc.start(now);
-        osc.stop(now + 0.37);
-      },
-      playLevelWin() {
-        if (this.muted) return;
-        this.unlock();
-        if (!this.ctx) return;
-        const now = this.ctx.currentTime;
-        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = "triangle";
-          const t = now + i * 0.09;
-          osc.frequency.setValueAtTime(freq, t);
-          gain.gain.setValueAtTime(0.14, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-          osc.connect(gain);
-          gain.connect(this.ctx.destination);
-          osc.start(t);
-          osc.stop(t + 0.29);
-        });
-      }
+      jump(isFire) { this.tone(isFire ? 200 : 250, isFire ? 480 : 560, 0.14, isFire ? "triangle" : "sine", 0.13); },
+      gem() { [660, 990, 1320].forEach((f, i) => this.tone(f, f * 1.06, 0.17, "sine", 0.12, i * 0.045)); },
+      door(open) { this.tone(open ? 140 : 260, open ? 290 : 120, 0.22, "sawtooth", 0.08); },
+      ready() { [523, 659].forEach((f, i) => this.tone(f, null, 0.14, "triangle", 0.12, i * 0.07)); },
+      death() { this.tone(260, 60, 0.34, "sawtooth", 0.15); },
+      win() { [523, 659, 784, 1046].forEach((f, i) => this.tone(f, null, 0.24, "triangle", 0.13, i * 0.085)); }
     };
 
     // =========================================================================
-    // 4. FİZİK SABİTLERİ VE ÇUKUR HAVUZLU 3 BÖLÜM
+    // 3. FİZİK SABİTLERİ VE GERÇEK OYMA ÇUKURLU 3 BÖLÜM
     // =========================================================================
     const W = 800, H = 450;
-    const GRAVITY = 0.52;
-    const MOVE_SPEED = 4.2;
-    const JUMP_FORCE = -11.4; // Havuzların üzerinden rahatça atlamak için güçlendirildi
-    const PW = 24, PH = 34;
+    const PW = 22, PH = 34;
+    const GRAVITY = 0.50;
+    const MOVE_SPEED = 4.6;
+    const JUMP_FORCE = -11.9; // Zıplama menzili ~220px, çukurlar sadece 40-44px!
 
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-
-    // Havuzlar platformun üstünde yüzmez; o platformun içine oyulmuş gerçek çukurlardır!
+    // Tüm havuzlar taş bloğun içine fiziksel olarak oyulur (depth: 10px çukur derinliği)
     const LEVELS = [
       {
         name: "1. Tapınak Girişi",
-        spawns: { fire: { x: 48, y: 380 }, water: { x: 94, y: 380 } },
+        spawns: { fire: { x: 46, y: 382 }, water: { x: 92, y: 382 } },
         torches: [
-          { x: 90, y: 120 }, { x: 390, y: 120 }, { x: 560, y: 120 },
-          { x: 325, y: 255 }, { x: 590, y: 365 }
+          { x: 95, y: 120 }, { x: 395, y: 115 }, { x: 565, y: 115 },
+          { x: 315, y: 255 }, { x: 595, y: 365 }
         ],
         walls: [
           { x: 0, y: 0, w: 20, h: 450 },
           { x: 780, y: 0, w: 20, h: 450 },
           { x: 0, y: 0, w: 800, h: 20 },
           { x: 0, y: 420, w: 800, h: 30 },
-          { x: 680, y: 365, w: 100, h: 18 },
-          { x: 160, y: 310, w: 540, h: 20 },
+          { x: 685, y: 365, w: 95, h: 18 },
+          { x: 155, y: 310, w: 545, h: 22 },
           { x: 20, y: 255, w: 120, h: 18 },
-          { x: 160, y: 200, w: 620, h: 20 }
+          { x: 155, y: 200, w: 625, h: 22 }
         ],
-        // Kısaltılmış mesafeler (50-56px) — y: 420 ve y: 310 yüzeylerinin içine gömülü çukurlar
+        // Kısaltılmış çukur havuzlar (40-44px genişlik, 10px gerçek çukur derinliği)
         hazards: [
-          { x: 225, y: 420, w: 54, h: 16, type: "lava" },
-          { x: 415, y: 420, w: 54, h: 16, type: "water" },
-          { x: 380, y: 310, w: 50, h: 13, type: "acid" }
+          { x: 230, y: 420, w: 44, depth: 10, type: "lava" },
+          { x: 420, y: 420, w: 44, depth: 10, type: "water" },
+          { x: 382, y: 310, w: 40, depth: 9, type: "acid" }
         ],
         buttons: [
-          { x: 520, y: 302, w: 42, h: 8, targetId: 1, color: "#ffd54f" },
-          { x: 230, y: 192, w: 42, h: 8, targetId: 1, color: "#ffd54f" }
+          { x: 525, y: 302, w: 42, h: 8, targetId: 1, color: 0xffd54f },
+          { x: 235, y: 192, w: 42, h: 8, targetId: 1, color: 0xffd54f }
         ],
         gates: [
-          { id: 1, x: 230, y: 220, w: 18, h: 90, kind: "gate", color: "#ffd54f" }
+          { id: 1, x: 232, y: 222, w: 18, h: 88, kind: "gate", color: 0xffd54f }
         ],
         gems: [
           { x: 252, y: 374, type: "fire" },
           { x: 442, y: 374, type: "water" },
-          { x: 310, y: 274, type: "fire" },
-          { x: 470, y: 164, type: "water" }
+          { x: 312, y: 274, type: "fire" },
+          { x: 472, y: 162, type: "water" }
         ],
         doors: {
-          fire: { x: 630, y: 146, w: 40, h: 54 },
-          water: { x: 700, y: 146, w: 40, h: 54 }
+          fire: { x: 628, y: 144, w: 40, h: 56 },
+          water: { x: 702, y: 144, w: 40, h: 56 }
         }
       },
       {
         name: "2. İkiz Köprüler",
-        spawns: { fire: { x: 50, y: 380 }, water: { x: 720, y: 380 } },
+        spawns: { fire: { x: 48, y: 382 }, water: { x: 724, y: 382 } },
         torches: [
-          { x: 155, y: 120 }, { x: 400, y: 135 }, { x: 645, y: 120 },
+          { x: 155, y: 120 }, { x: 400, y: 130 }, { x: 645, y: 120 },
           { x: 110, y: 265 }, { x: 690, y: 265 }
         ],
         walls: [
@@ -850,41 +830,41 @@
           { x: 0, y: 0, w: 800, h: 20 },
           { x: 0, y: 420, w: 800, h: 30 },
           { x: 390, y: 310, w: 20, h: 110 },
-          { x: 20, y: 320, w: 220, h: 20 },
-          { x: 560, y: 320, w: 220, h: 20 },
-          { x: 290, y: 255, w: 220, h: 20 },
-          { x: 20, y: 185, w: 210, h: 20 },
-          { x: 570, y: 185, w: 210, h: 20 }
+          { x: 20, y: 320, w: 225, h: 22 },
+          { x: 555, y: 320, w: 225, h: 22 },
+          { x: 285, y: 255, w: 230, h: 22 },
+          { x: 20, y: 185, w: 215, h: 22 },
+          { x: 565, y: 185, w: 215, h: 22 }
         ],
         hazards: [
-          { x: 188, y: 420, w: 56, h: 16, type: "lava" },
-          { x: 554, y: 420, w: 56, h: 16, type: "water" },
-          { x: 376, y: 255, w: 48, h: 13, type: "acid" }
+          { x: 194, y: 420, w: 44, depth: 10, type: "lava" },
+          { x: 560, y: 420, w: 44, depth: 10, type: "water" },
+          { x: 380, y: 255, w: 40, depth: 9, type: "acid" }
         ],
         buttons: [
-          { x: 310, y: 412, w: 42, h: 8, targetId: 1, color: "#ff8a65" },
-          { x: 600, y: 312, w: 42, h: 8, targetId: 2, color: "#4fc3f7" }
+          { x: 312, y: 412, w: 42, h: 8, targetId: 1, color: 0xff8a65 },
+          { x: 605, y: 312, w: 42, h: 8, targetId: 2, color: 0x4fc3f7 }
         ],
         gates: [
-          { id: 1, x: 570, y: 368, w: 95, h: 16, kind: "bridge", color: "#ff8a65" },
-          { id: 2, x: 135, y: 368, w: 95, h: 16, kind: "bridge", color: "#4fc3f7" }
+          { id: 1, x: 565, y: 368, w: 100, h: 16, kind: "bridge", color: 0xff8a65 },
+          { id: 2, x: 135, y: 368, w: 100, h: 16, kind: "bridge", color: 0x4fc3f7 }
         ],
         gems: [
           { x: 216, y: 374, type: "fire" },
           { x: 582, y: 374, type: "water" },
-          { x: 330, y: 220, type: "water" },
-          { x: 470, y: 220, type: "fire" }
+          { x: 328, y: 218, type: "water" },
+          { x: 472, y: 218, type: "fire" }
         ],
         doors: {
-          fire: { x: 700, y: 131, w: 40, h: 54 },
-          water: { x: 60, y: 131, w: 40, h: 54 }
+          fire: { x: 700, y: 129, w: 40, h: 56 },
+          water: { x: 60, y: 129, w: 40, h: 56 }
         }
       },
       {
         name: "3. Zehirli Mahzen",
-        spawns: { fire: { x: 48, y: 380 }, water: { x: 96, y: 380 } },
+        spawns: { fire: { x: 46, y: 382 }, water: { x: 94, y: 382 } },
         torches: [
-          { x: 90, y: 120 }, { x: 390, y: 115 }, { x: 565, y: 115 },
+          { x: 90, y: 120 }, { x: 390, y: 112 }, { x: 565, y: 112 },
           { x: 260, y: 255 }, { x: 635, y: 365 }
         ],
         walls: [
@@ -892,109 +872,698 @@
           { x: 780, y: 0, w: 20, h: 450 },
           { x: 0, y: 0, w: 800, h: 20 },
           { x: 0, y: 420, w: 800, h: 30 },
-          { x: 700, y: 365, w: 80, h: 16 },
-          { x: 180, y: 310, w: 560, h: 20 },
-          { x: 20, y: 255, w: 110, h: 16 },
-          { x: 160, y: 195, w: 620, h: 20 }
+          { x: 695, y: 365, w: 85, h: 18 },
+          { x: 175, y: 310, w: 565, h: 22 },
+          { x: 20, y: 255, w: 115, h: 18 },
+          { x: 155, y: 195, w: 625, h: 22 }
         ],
         hazards: [
-          { x: 226, y: 420, w: 48, h: 16, type: "acid" },
-          { x: 375, y: 420, w: 54, h: 16, type: "lava" },
-          { x: 535, y: 420, w: 54, h: 16, type: "water" },
-          { x: 320, y: 310, w: 54, h: 13, type: "lava" },
-          { x: 295, y: 195, w: 52, h: 13, type: "water" },
-          { x: 468, y: 195, w: 52, h: 13, type: "lava" }
+          { x: 228, y: 420, w: 40, depth: 10, type: "acid" },
+          { x: 380, y: 420, w: 44, depth: 10, type: "lava" },
+          { x: 540, y: 420, w: 44, depth: 10, type: "water" },
+          { x: 325, y: 310, w: 42, depth: 9, type: "lava" },
+          { x: 300, y: 195, w: 42, depth: 9, type: "water" },
+          { x: 472, y: 195, w: 42, depth: 9, type: "lava" }
         ],
         buttons: [
-          { x: 640, y: 302, w: 42, h: 8, targetId: 1, color: "#ce93d8" },
-          { x: 210, y: 302, w: 42, h: 8, targetId: 1, color: "#ce93d8" }
+          { x: 642, y: 302, w: 42, h: 8, targetId: 1, color: 0xce93d8 },
+          { x: 210, y: 302, w: 42, h: 8, targetId: 1, color: 0xce93d8 }
         ],
         gates: [
-          { id: 1, x: 450, y: 220, w: 18, h: 90, kind: "gate", color: "#ce93d8" },
-          { id: 1, x: 315, y: 260, w: 72, h: 14, kind: "bridge", color: "#ce93d8" }
+          { id: 1, x: 452, y: 217, w: 18, h: 93, kind: "gate", color: 0xce93d8 },
+          { id: 1, x: 310, y: 260, w: 78, h: 14, kind: "bridge", color: 0xce93d8 }
         ],
         gems: [
           { x: 402, y: 374, type: "fire" },
           { x: 562, y: 374, type: "water" },
           { x: 321, y: 152, type: "water" },
-          { x: 494, y: 152, type: "fire" }
+          { x: 493, y: 152, type: "fire" }
         ],
         doors: {
-          fire: { x: 635, y: 141, w: 40, h: 54 },
-          water: { x: 705, y: 141, w: 40, h: 54 }
+          fire: { x: 635, y: 139, w: 40, h: 56 },
+          water: { x: 705, y: 139, w: 40, h: 56 }
         }
       }
     ];
 
+    // Taş duvarları havuz konumlarından fiziksel olarak oyup çukur teknesi üretir
+    function carveWalls(walls, hazards) {
+      const carved = [];
+      for (const w of walls) {
+        const pits = hazards
+          .filter((h) => h.y === w.y && h.x >= w.x && h.x + h.w <= w.x + w.w)
+          .sort((a, b) => a.x - b.x);
+        if (!pits.length) {
+          carved.push({ ...w, isPitFloor: false });
+          continue;
+        }
+        let cursor = w.x;
+        for (const p of pits) {
+          if (p.x > cursor) {
+            carved.push({ x: cursor, y: w.y, w: p.x - cursor, h: w.h, isPitFloor: false });
+          }
+          // Çukurun taban taşı (depth kadar aşağıda!)
+          carved.push({
+            x: p.x,
+            y: w.y + p.depth,
+            w: p.w,
+            h: Math.max(8, w.h - p.depth),
+            isPitFloor: true
+          });
+          cursor = p.x + p.w;
+        }
+        if (cursor < w.x + w.w) {
+          carved.push({ x: cursor, y: w.y, w: w.x + w.w - cursor, h: w.h, isPitFloor: false });
+        }
+      }
+      return carved;
+    }
+
+    const CARVED_LEVELS = LEVELS.map((lvl) => ({
+      ...lvl,
+      carvedWalls: carveWalls(lvl.walls, lvl.hazards)
+    }));
+
     // =========================================================================
-    // 5. OYUN VE FIREBASE ODA DURUMU
+    // 4. GERÇEK 3D THREE.JS MOTORU
     // =========================================================================
-    let mode = "host";
+    const canvas3d = document.getElementById("viewport3d");
+    const renderer = new THREE.WebGLRenderer({ canvas: canvas3d, antialias: true, powerPreference: "high-performance" });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.22;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b0912);
+    scene.fog = new THREE.FogExp2(0x0b0912, 0.0068);
+
+    const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.5, 240);
+    camera.position.set(0, 0, 74);
+
+    // 2D (800x450) -> 3D Koordinat Dönüşümü
+    const S = 10;
+    const toX = (x) => (x - W / 2) / S;
+    const toY = (y) => (H / 2 - y) / S;
+
+    function resize3D() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      renderer.setSize(vw, vh, false);
+      camera.aspect = vw / vh;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize3D);
+    resize3D();
+
+    // Prosedürel 3D Taş Dokusu + Kabartma Haritası (Harici dosya gerekmez)
+    function makeStoneTextures(baseHex, mortarHex, moss) {
+      const c = document.createElement("canvas");
+      c.width = 256; c.height = 256;
+      const g = c.getContext("2d");
+      g.fillStyle = mortarHex;
+      g.fillRect(0, 0, 256, 256);
+
+      const b = document.createElement("canvas");
+      b.width = 256; b.height = 256;
+      const bg = b.getContext("2d");
+      bg.fillStyle = "#181818";
+      bg.fillRect(0, 0, 256, 256);
+
+      const rows = 4, cols = 4;
+      const bw = 256 / cols, bh = 256 / rows;
+      for (let r = 0; r < rows; r++) {
+        const off = (r % 2) * (bw / 2);
+        for (let col = -1; col <= cols; col++) {
+          const x = col * bw + off;
+          const y = r * bh;
+          const v = (Math.sin(r * 13 + col * 7) * 0.5 + 0.5) * 18 - 9;
+          g.fillStyle = baseHex;
+          g.fillRect(x + 3, y + 3, bw - 6, bh - 6);
+          g.fillStyle = v > 0 ? `rgba(255,255,255,${v / 140})` : `rgba(0,0,0,${-v / 110})`;
+          g.fillRect(x + 3, y + 3, bw - 6, bh - 6);
+          // 3D taş kenar parıltısı
+          g.fillStyle = "rgba(255,255,255,0.12)";
+          g.fillRect(x + 3, y + 3, bw - 6, 3);
+          g.fillStyle = "rgba(0,0,0,0.28)";
+          g.fillRect(x + 3, y + bh - 6, bw - 6, 3);
+
+          // Bump
+          bg.fillStyle = "#d5d5d5";
+          bg.fillRect(x + 4, y + 4, bw - 8, bh - 8);
+        }
+      }
+      if (moss) {
+        g.fillStyle = "rgba(62, 130, 74, 0.45)";
+        g.fillRect(0, 0, 256, 12);
+      }
+
+      const map = new THREE.CanvasTexture(c);
+      map.wrapS = map.wrapT = THREE.RepeatWrapping;
+      const bumpMap = new THREE.CanvasTexture(b);
+      bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
+      return { map, bumpMap };
+    }
+
+    const wallTex = makeStoneTextures("#5c526b", "#1d1826", true);
+    const backTex = makeStoneTextures("#2c2538", "#120e1a", false);
+    backTex.map.repeat.set(8, 4.5);
+    backTex.bumpMap.repeat.set(8, 4.5);
+
+    // Genel Işıklar
+    scene.add(new THREE.HemisphereLight(0xb8a8d9, 0x241a2b, 0.75));
+    const dirLight = new THREE.DirectionalLight(0xfff1dc, 0.95);
+    dirLight.position.set(14, 24, 38);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(1024, 1024);
+    dirLight.shadow.camera.left = -46;
+    dirLight.shadow.camera.right = 46;
+    dirLight.shadow.camera.top = 28;
+    dirLight.shadow.camera.bottom = -28;
+    scene.add(dirLight);
+
+    // Arka Plan Tapınak Duvarı ve 3D Sütunlar
+    const backWall = new THREE.Mesh(
+      new THREE.PlaneGeometry(96, 56),
+      new THREE.MeshStandardMaterial({ map: backTex.map, bumpMap: backTex.bumpMap, bumpScale: 0.35, roughness: 0.92, metalness: 0.08 })
+    );
+    backWall.position.set(0, 0, -5.5);
+    backWall.receiveShadow = true;
+    scene.add(backWall);
+
+    [-25, 0, 25].forEach((px) => {
+      const pil = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.2, 2.5, 44, 12),
+        new THREE.MeshStandardMaterial({ color: 0x3b3347, roughness: 0.85, bumpMap: backTex.bumpMap, bumpScale: 0.2 })
+      );
+      pil.position.set(px, 0, -4.4);
+      scene.add(pil);
+    });
+
+    // 3D Karakter Oluşturucu (Ateş & Su)
+    function createCharacter3D(isFire) {
+      const group = new THREE.Group();
+      const mainCol = isFire ? 0xff4512 : 0x00a8ff;
+      const emissiveCol = isFire ? 0xd83200 : 0x005fa3;
+      const crownCol = isFire ? 0xffd54f : 0x80d8ff;
+
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: mainCol, emissive: emissiveCol, emissiveIntensity: 0.45,
+        roughness: isFire ? 0.35 : 0.14, metalness: isFire ? 0.05 : 0.22
+      });
+      const darkMat = new THREE.MeshStandardMaterial({
+        color: isFire ? 0xb71c1c : 0x01579b, emissive: emissiveCol, emissiveIntensity: 0.25, roughness: 0.4
+      });
+      const crownMat = new THREE.MeshStandardMaterial({
+        color: crownCol, emissive: crownCol, emissiveIntensity: 0.9, roughness: 0.2
+      });
+
+      const bodyPivot = new THREE.Group();
+      group.add(bodyPivot);
+
+      // Gövde (3D yumuşak silindir + küreler)
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.68, 0.78, 1.35, 14), bodyMat);
+      torso.position.y = 1.55;
+      torso.castShadow = true;
+      bodyPivot.add(torso);
+
+      // Bacaklar
+      const legGeo = new THREE.CylinderGeometry(0.24, 0.2, 1.0, 10);
+      const leftLeg = new THREE.Mesh(legGeo, darkMat);
+      leftLeg.position.set(-0.34, 0.52, 0);
+      leftLeg.castShadow = true;
+      bodyPivot.add(leftLeg);
+
+      const rightLeg = new THREE.Mesh(legGeo, bodyMat);
+      rightLeg.position.set(0.34, 0.52, 0);
+      rightLeg.castShadow = true;
+      bodyPivot.add(rightLeg);
+
+      // Kollar
+      const armGeo = new THREE.CylinderGeometry(0.18, 0.16, 0.9, 8);
+      const leftArm = new THREE.Mesh(armGeo, bodyMat);
+      leftArm.position.set(-0.88, 1.55, 0);
+      bodyPivot.add(leftArm);
+
+      const rightArm = new THREE.Mesh(armGeo, bodyMat);
+      rightArm.position.set(0.88, 1.55, 0);
+      bodyPivot.add(rightArm);
+
+      // Kafa
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.88, 18, 16), bodyMat);
+      head.position.y = 2.68;
+      head.castShadow = true;
+      bodyPivot.add(head);
+
+      // Gözler
+      const eyeW = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const pupilM = new THREE.MeshBasicMaterial({ color: 0x111118 });
+      const eyesGroup = new THREE.Group();
+      eyesGroup.position.set(0, 2.72, 0.72);
+      bodyPivot.add(eyesGroup);
+
+      [-0.32, 0.32].forEach((ex) => {
+        const ew = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 12), eyeW);
+        ew.scale.set(0.95, 1.15, 0.55);
+        ew.position.set(ex, 0, 0);
+        eyesGroup.add(ew);
+        const ep = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), pupilM);
+        ep.position.set(ex, 0, 0.12);
+        eyesGroup.add(ep);
+      });
+
+      // Saç / Taç (3D Alev konileri veya Su bukleleri)
+      const hairGroup = new THREE.Group();
+      hairGroup.position.y = 3.32;
+      bodyPivot.add(hairGroup);
+
+      if (isFire) {
+        const c1 = new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.35, 10), crownMat);
+        c1.position.set(0, 0.35, 0);
+        const c2 = new THREE.Mesh(new THREE.ConeGeometry(0.38, 1.0, 9), bodyMat);
+        c2.position.set(-0.42, 0.15, -0.08); c2.rotation.z = 0.35;
+        const c3 = new THREE.Mesh(new THREE.ConeGeometry(0.38, 1.0, 9), bodyMat);
+        c3.position.set(0.42, 0.15, -0.08); c3.rotation.z = -0.35;
+        hairGroup.add(c1, c2, c3);
+      } else {
+        const drop = new THREE.Mesh(new THREE.ConeGeometry(0.58, 1.15, 14), bodyMat);
+        drop.position.set(0, 0.25, 0);
+        const curl = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12), crownMat);
+        curl.scale.set(1.4, 0.7, 0.85);
+        curl.position.set(-0.62, -0.2, -0.15);
+        hairGroup.add(drop, curl);
+      }
+
+      // Karakterin etrafını aydınlatan dinamik 3D PointLight
+      const pLight = new THREE.PointLight(isFire ? 0xff6d2e : 0x29b6f6, 1.7, 15);
+      pLight.position.set(0, 2.2, 2.2);
+      group.add(pLight);
+
+      scene.add(group);
+      return { group, bodyPivot, leftLeg, rightLeg, leftArm, rightArm, eyesGroup, hairGroup, pLight };
+    }
+
+    const fireRig = createCharacter3D(true);
+    const waterRig = createCharacter3D(false);
+
+    // 3D Parçacık Havuzu
+    const pGeo = new THREE.SphereGeometry(0.22, 6, 6);
+    const particles3D = [];
+    const MAX_P3D = 120;
+
+    function spawnP3D(x, y, z, vx, vy, vz, colorHex, life, scale = 1, grav = 0) {
+      if (particles3D.length >= MAX_P3D) {
+        const old = particles3D.shift();
+        scene.remove(old.mesh);
+      }
+      const mesh = new THREE.Mesh(pGeo, new THREE.MeshBasicMaterial({ color: colorHex, transparent: true, opacity: 1 }));
+      mesh.position.set(x, y, z);
+      mesh.scale.setScalar(scale);
+      scene.add(mesh);
+      particles3D.push({ mesh, vx, vy, vz, life, maxLife: life, scale, grav });
+    }
+
+    function burst3D(px, py, colors, count = 16) {
+      const wx = toX(px), wy = toY(py);
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const sp = 0.08 + Math.random() * 0.24;
+        spawnP3D(wx, wy, (Math.random() - 0.5) * 1.4, Math.cos(a) * sp, Math.sin(a) * sp + 0.08, (Math.random() - 0.5) * 0.16, colors[i % colors.length], 28 + Math.random() * 14, 1.15, -0.005);
+      }
+    }
+
+    // Seviye 3D Sahne Grubu
+    let levelGroup = new THREE.Group();
+    scene.add(levelGroup);
+    let dynTorches = [];
+    let dynLiquids = [];
+    let dynGates = [];
+    let dynButtons = [];
+    let dynGems = [];
+    let dynDoors = {};
+
+    function buildLevel3D(idx) {
+      scene.remove(levelGroup);
+      levelGroup = new THREE.Group();
+      scene.add(levelGroup);
+      dynTorches = [];
+      dynLiquids = [];
+      dynGates = [];
+      dynButtons = [];
+      dynGems = [];
+      dynDoors = {};
+
+      const lvl = CARVED_LEVELS[idx];
+
+      // 1. Oyulmuş 3D Taş Duvarlar ve Platformlar
+      for (const w of lvl.carvedWalls) {
+        const bw = w.w / S, bh = w.h / S, bd = 4.6;
+        const geo = new THREE.BoxGeometry(bw, bh, bd);
+        const texCopy = wallTex.map.clone();
+        texCopy.needsUpdate = true;
+        texCopy.repeat.set(Math.max(1, bw / 4), Math.max(1, bh / 3));
+
+        const mat = new THREE.MeshStandardMaterial({
+          map: texCopy,
+          bumpMap: wallTex.bumpMap,
+          bumpScale: 0.24,
+          roughness: 0.85,
+          metalness: 0.08,
+          color: w.isPitFloor ? 0x6f6482 : 0xffffff
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(toX(w.x + w.w / 2), toY(w.y + w.h / 2), 0);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        levelGroup.add(mesh);
+
+        // Üst 3D taş pervaz (sadece normal platform üstleri)
+        if (!w.isPitFloor && w.h <= 45) {
+          const rim = new THREE.Mesh(
+            new THREE.BoxGeometry(bw + 0.14, 0.34, bd + 0.3),
+            new THREE.MeshStandardMaterial({ color: 0x7a6f8f, roughness: 0.72, metalness: 0.1 })
+          );
+          rim.position.set(toX(w.x + w.w / 2), toY(w.y) - 0.1, 0);
+          rim.receiveShadow = true;
+          levelGroup.add(rim);
+        }
+      }
+
+      // 2. GERÇEKÇİ OYMA ÇUKUR HAVUZLAR (İç Yan Duvarlar + 3D Dalgalı Sıvı + Işık)
+      for (const hz of lvl.hazards) {
+        const hw = hz.w / S;
+        const hDepth = hz.depth / S;
+        const cx = toX(hz.x + hz.w / 2);
+        const topY = toY(hz.y);
+
+        // Çukurun karanlık arka duvarı ve eğimli taş ağız kenarları
+        const backLip = new THREE.Mesh(
+          new THREE.BoxGeometry(hw + 0.3, hDepth + 0.2, 0.5),
+          new THREE.MeshStandardMaterial({ color: 0x1e1828, roughness: 0.95 })
+        );
+        backLip.position.set(cx, topY - hDepth / 2, -2.1);
+        levelGroup.add(backLip);
+
+        // Ön cam/taş düşük eşik (çukurun içindeki sıvıyı 3D derinlikli görmen için)
+        const frontLip = new THREE.Mesh(
+          new THREE.BoxGeometry(hw + 0.3, hDepth * 0.42, 0.45),
+          new THREE.MeshStandardMaterial({ color: 0x4b4259, roughness: 0.8 })
+        );
+        frontLip.position.set(cx, topY - hDepth + hDepth * 0.21, 2.25);
+        levelGroup.add(frontLip);
+
+        // Sol ve sağ eğimli 3D taş havuz dudakları
+        [-1, 1].forEach((side) => {
+          const bevel = new THREE.Mesh(
+            new THREE.BoxGeometry(0.45, hDepth * 0.9, 4.7),
+            new THREE.MeshStandardMaterial({ color: 0x625673, roughness: 0.78 })
+          );
+          bevel.position.set(cx + side * (hw / 2 - 0.08), topY - hDepth * 0.48, 0);
+          bevel.rotation.z = side * 0.28;
+          levelGroup.add(bevel);
+        });
+
+        // Sıvı Materyali
+        let liqColor = 0xff3d00, emCol = 0xff6d00, op = 0.96, lightCol = 0xff5722;
+        if (hz.type === "water") { liqColor = 0x00b0ff; emCol = 0x0066aa; op = 0.84; lightCol = 0x29b6f6; }
+        if (hz.type === "acid") { liqColor = 0x64dd17; emCol = 0x2e7d32; op = 0.92; lightCol = 0x76ff03; }
+
+        // Çukur içi sıvı hacmi (taş yüzeyinin 0.28 birim altında!)
+        const liqH = hDepth * 0.72;
+        const bodyMesh = new THREE.Mesh(
+          new THREE.BoxGeometry(hw - 0.12, liqH, 4.1),
+          new THREE.MeshStandardMaterial({
+            color: liqColor, emissive: emCol, emissiveIntensity: 0.75,
+            roughness: 0.15, metalness: 0.1, transparent: true, opacity: op
+          })
+        );
+        bodyMesh.position.set(cx, topY - hDepth + liqH / 2, 0);
+        levelGroup.add(bodyMesh);
+
+        // Dalgalanan 3D Üst Yüzey Mesh'i
+        const surfGeo = new THREE.PlaneGeometry(hw - 0.1, 4.1, 12, 4);
+        const surfMat = new THREE.MeshStandardMaterial({
+          color: hz.type === "lava" ? 0xffd54f : (hz.type === "water" ? 0x80d8ff : 0xccff90),
+          emissive: liqColor,
+          emissiveIntensity: 0.9,
+          roughness: 0.1,
+          transparent: true,
+          opacity: 0.92
+        });
+        const surfMesh = new THREE.Mesh(surfGeo, surfMat);
+        surfMesh.rotation.x = -Math.PI / 2;
+        surfMesh.position.set(cx, topY - hDepth + liqH + 0.03, 0);
+        levelGroup.add(surfMesh);
+
+        // Çukurdan yukarı vuran gerçek 3D ışık
+        const pitLight = new THREE.PointLight(lightCol, 1.35, 13);
+        pitLight.position.set(cx, topY + 1.2, 1.2);
+        levelGroup.add(pitLight);
+
+        dynLiquids.push({ surfGeo, hz, cx, topY, pitLight });
+      }
+
+      // 3. 3D Duvar Meşaleleri
+      for (const t of lvl.torches) {
+        const tg = new THREE.Group();
+        tg.position.set(toX(t.x), toY(t.y), -3.8);
+
+        const handle = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.18, 0.12, 1.8, 8),
+          new THREE.MeshStandardMaterial({ color: 0x5d4037, roughness: 0.9 })
+        );
+        handle.rotation.x = 0.25;
+        tg.add(handle);
+
+        const flame = new THREE.Mesh(
+          new THREE.ConeGeometry(0.42, 1.15, 8),
+          new THREE.MeshBasicMaterial({ color: 0xffab00 })
+        );
+        flame.position.set(0, 1.1, 0.22);
+        tg.add(flame);
+
+        const tLight = new THREE.PointLight(0xff8f2b, 1.4, 18);
+        tLight.position.set(0, 1.4, 2.2);
+        tg.add(tLight);
+
+        levelGroup.add(tg);
+        dynTorches.push({ flame, tLight, x: toX(t.x), y: toY(t.y) + 1.2, z: -3.4 });
+      }
+
+      // 4. 3D Mekanik Kapılar & Enerji Köprüleri
+      for (const g of lvl.gates) {
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(g.w / S, g.h / S, 4.2),
+          new THREE.MeshStandardMaterial({
+            color: g.color, emissive: g.color, emissiveIntensity: 0.45,
+            roughness: 0.3, metalness: 0.4, transparent: true, opacity: 0.95
+          })
+        );
+        mesh.position.set(toX(g.x + g.w / 2), toY(g.y + g.h / 2), 0);
+        mesh.castShadow = true;
+        levelGroup.add(mesh);
+        dynGates.push({ data: g, mesh });
+      }
+
+      // 5. 3D Zemin Butonları
+      for (const b of lvl.buttons) {
+        const base = new THREE.Mesh(
+          new THREE.BoxGeometry((b.w + 6) / S, 0.35, 3.6),
+          new THREE.MeshStandardMaterial({ color: 0x2a2335, roughness: 0.8 })
+        );
+        base.position.set(toX(b.x + b.w / 2), toY(b.y + b.h) + 0.17, 0);
+        levelGroup.add(base);
+
+        const cap = new THREE.Mesh(
+          new THREE.BoxGeometry(b.w / S, 0.55, 3.0),
+          new THREE.MeshStandardMaterial({ color: b.color, emissive: b.color, emissiveIntensity: 0.5, roughness: 0.3 })
+        );
+        const restY = toY(b.y + b.h / 2) + 0.1;
+        cap.position.set(toX(b.x + b.w / 2), restY, 0);
+        levelGroup.add(cap);
+        dynButtons.push({ data: b, cap, restY });
+      }
+
+      // 6. 3D Dönen Kristal Elmaslar
+      lvl.gems.forEach((gm, i) => {
+        const isFire = gm.type === "fire";
+        const col = isFire ? 0xff3d00 : 0x00b0ff;
+        const mesh = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.92, 0),
+          new THREE.MeshStandardMaterial({
+            color: col, emissive: col, emissiveIntensity: 0.75,
+            roughness: 0.1, metalness: 0.35
+          })
+        );
+        mesh.scale.set(0.85, 1.25, 0.85);
+        mesh.position.set(toX(gm.x), toY(gm.y), 0.2);
+        levelGroup.add(mesh);
+        dynGems.push({ mesh, baseY: toY(gm.y), idx: i });
+      });
+
+      // 7. 3D Tapınak Bitiş Kapıları
+      ["fire", "water"].forEach((t) => {
+        const d = lvl.doors[t];
+        const col = t === "fire" ? 0xff5722 : 0x29b6f6;
+        const dg = new THREE.Group();
+        dg.position.set(toX(d.x + d.w / 2), toY(d.y + d.h / 2), -1.8);
+
+        const frame = new THREE.Mesh(
+          new THREE.BoxGeometry((d.w + 8) / S, (d.h + 4) / S, 1.6),
+          new THREE.MeshStandardMaterial({ color: 0x453b54, roughness: 0.8 })
+        );
+        dg.add(frame);
+
+        const portal = new THREE.Mesh(
+          new THREE.BoxGeometry((d.w - 4) / S, (d.h - 4) / S, 1.8),
+          new THREE.MeshStandardMaterial({ color: 0x100c18, emissive: col, emissiveIntensity: 0.25, roughness: 0.2 })
+        );
+        dg.add(portal);
+
+        const ring = new THREE.Mesh(
+          new THREE.TorusGeometry(1.15, 0.16, 10, 24),
+          new THREE.MeshBasicMaterial({ color: col })
+        );
+        ring.position.z = 1.05;
+        dg.add(ring);
+
+        levelGroup.add(dg);
+        dynDoors[t] = { portal, ring, col };
+      });
+    }
+
+    buildLevel3D(0);
+
+    // =========================================================================
+    // 5. OYUN DURUMU, FİZİK (COYOTE TIME + STEP-UP) & EŞLEŞME SİSTEMİ
+    // =========================================================================
+    let appScreen = "lobby"; // 'lobby' | 'game'
+    let mode = "solo"; // 'host' | 'guest' | 'solo'
     let soloControl = "fire";
     let currentRoomCode = null;
     let roomRef = null;
+    let heartbeatInt = null;
+    let selectedStartLevel = 0;
     let guestReady = false;
     let gameStarted = false;
     let lastRestartReq = 0;
-    let lastHandledEventId = 0;
+    let lastEventId = 0;
 
     let localInput = { left: false, right: false, jump: false };
     let remoteInput = { left: false, right: false, jump: false };
 
+    const pExtra = {
+      fire: { coyote: 0, jumpBuf: 0, walkPhase: 0, squashY: 1, wasGround: true },
+      water: { coyote: 0, jumpBuf: 0, walkPhase: 0, squashY: 1, wasGround: true }
+    };
+
     let state = {
       levelIdx: 0,
-      fire: { x: 48, y: 380, vx: 0, vy: 0, grounded: false, dir: 1 },
-      water: { x: 94, y: 380, vx: 0, vy: 0, grounded: false, dir: 1 },
-      gemsCollected: [],
+      fire: { x: 46, y: 382, vx: 0, vy: 0, grounded: false, dir: 1 },
+      water: { x: 92, y: 382, vx: 0, vy: 0, grounded: false, dir: 1 },
+      gemsCollected: [false, false, false, false],
       activeIds: {},
-      wonAll: false,
       event: { id: 0, type: "", text: "" }
     };
 
-    const statusBox = document.getElementById("statusBox");
+    // Misafir ekranda 60 FPS akıcı görünüm için interpolasyon konumu
+    const smoothPos = {
+      fire: { x: 46, y: 382 },
+      water: { x: 92, y: 382 }
+    };
+
+    const statusBar = document.getElementById("statusBar");
     const toastEl = document.getElementById("toast");
-    let toastTimeout = null;
-    let lastTime = performance.now();
-    let syncTimer = 0;
-    let levelTransitionLock = false;
-    let loopRunning = false;
+    let toastTimer = null;
+    let levelLock = false;
 
-    function setStatus(html) {
-      statusBox.innerHTML = html;
-    }
-
+    function setStatus(html) { statusBar.innerHTML = html; }
     function showToast(msg) {
       toastEl.textContent = msg;
       toastEl.classList.add("show");
-      clearTimeout(toastTimeout);
-      toastTimeout = setTimeout(() => toastEl.classList.remove("show"), 2000);
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2000);
     }
 
     function emitEvent(type, text) {
       state.event = { id: Date.now() + Math.random(), type, text };
       showToast(text);
-      if (mode === "host" && roomRef && gameStarted) {
-        roomRef.child("state").set(state);
-      }
+      if (mode === "host" && roomRef && gameStarted) roomRef.child("state").set(state);
     }
 
-    // =========================================================================
-    // 6. LOBİ, RASTGELE EŞLEŞTİRME VE HAZIR SİSTEMİ
-    // =========================================================================
-    function switchLobbyScreen(view) {
-      document.getElementById("menuView").style.display = view === "menu" ? "flex" : "none";
-      document.getElementById("roomView").style.display = view === "room" ? "flex" : "none";
-    }
+    // --- SEKME GEÇİŞLERİ ---
+    document.querySelectorAll(".tab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".tab-pane").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      });
+    });
 
-    async function createFirebaseRoom(isPublic) {
+    document.querySelectorAll(".lvl-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        if (mode !== "host") return;
+        selectedStartLevel = Number(chip.dataset.lvl);
+        document.querySelectorAll(".lvl-chip").forEach((c) => c.classList.remove("selected"));
+        chip.classList.add("selected");
+        if (roomRef) roomRef.update({ startLevel: selectedStartLevel });
+      });
+    });
+
+    // --- CANLI AÇIK ODALAR DİNLEYİCİSİ (İndeks gerektirmez, eski odaları eler) ---
+    let openRoomsCache = [];
+    function startRoomBrowser() {
+      if (!initFirebase()) return;
+      db.ref(ROOMS_PATH).on("value", (snap) => {
+        const now = Date.now();
+        const list = [];
+        snap.forEach((child) => {
+          const r = child.val();
+          if (!r) return;
+          const alive = r.hostOnline && (now - (r.hostHeartbeat || 0) < 25000);
+          if (r.isPublic && r.status === "waiting" && alive && !r.guestOnline) {
+            list.push({ code: child.key, hostName: r.hostName || "Ateş", startLevel: r.startLevel || 0 });
+          }
+        });
+        openRoomsCache = list;
+        document.getElementById("openCountText").textContent = `${list.length} Açık Oda`;
+
+        const el = document.getElementById("publicRoomList");
+        if (!list.length) {
+          el.innerHTML = '<div class="empty-list">Şu an bekleyen açık oda yok.<br>Aşağıdan sen açabilir veya Hızlı Eşleştir diyebilirsin.</div>';
+        } else {
+          el.innerHTML = "";
+          list.forEach((item) => {
+            const row = document.createElement("div");
+            row.className = "room-item";
+            row.innerHTML = `
+              <div class="room-item-info">
+                <div class="room-item-name">🔥 ${escapeHtml(item.hostName)}</div>
+                <div class="room-item-sub">Oda #${item.code} • ${LEVELS[item.startLevel].name}</div>
+              </div>
+              <button class="btn-mini-join">💧 Katıl</button>
+            `;
+            row.querySelector("button").addEventListener("click", () => joinRoom(item.code));
+            el.appendChild(row);
+          });
+        }
+      });
+    }
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+    startRoomBrowser();
+
+    // --- ODA KUR / RASTGELE EŞLEŞTİR / KATIL ---
+    async function createRoom(isPublic) {
       if (!initFirebase()) return;
       SoundFX.unlock();
       mode = "host";
       guestReady = false;
       gameStarted = false;
-      lastRestartReq = 0;
+      selectedStartLevel = 0;
 
-      setStatus('<span class="pulse-dot"></span>Oda oluşturuluyor...');
+      setStatus('<span class="radar-spinner"></span>Oda kuruluyor...');
       const code = String(Math.floor(1000 + Math.random() * 9000));
       currentRoomCode = code;
       roomRef = db.ref(`${ROOMS_PATH}/${code}`);
@@ -1004,68 +1573,76 @@
           code,
           isPublic,
           status: "waiting",
-          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          startLevel: 0,
+          hostName: getNick(),
           hostOnline: true,
+          hostHeartbeat: Date.now(),
           guestOnline: false,
+          guestName: "",
           guestReady: false,
           guestInput: { left: false, right: false, jump: false },
           restartReq: 0
         });
         roomRef.onDisconnect().remove();
-        setupRoomUI(code, isPublic, true);
-        listenRoomAsHost();
-      } catch (err) {
-        setStatus("Oda kurulamadı (Firebase Rules iznini kontrol et): " + err.message);
+
+        clearInterval(heartbeatInt);
+        heartbeatInt = setInterval(() => {
+          if (roomRef && mode === "host") roomRef.child("hostHeartbeat").set(Date.now());
+        }, 5000);
+
+        openWaitingRoomUI(code, isPublic, true);
+        attachHostListener();
+      } catch (e) {
+        setStatus("Oda açılamadı (Firebase Kurallarını kontrol et): " + e.message);
       }
     }
 
-    async function quickMatchmaking() {
+    async function quickMatch() {
       if (!initFirebase()) return;
       SoundFX.unlock();
-      setStatus('<span class="pulse-dot"></span>Uygun oda aranıyor...');
-
+      setStatus('<span class="radar-spinner"></span>Uygun oyuncu aranıyor...');
       try {
-        const snap = await db.ref(ROOMS_PATH).orderByChild("isPublic").equalTo(true).once("value");
-        let foundCode = null;
+        const snap = await db.ref(ROOMS_PATH).once("value");
+        const now = Date.now();
+        let targetCode = null;
         snap.forEach((child) => {
-          const val = child.val();
-          if (val && val.status === "waiting" && val.hostOnline && !val.guestOnline) {
-            foundCode = child.key;
+          const r = child.val();
+          if (r && r.isPublic && r.status === "waiting" && r.hostOnline && !r.guestOnline && (now - (r.hostHeartbeat || 0) < 25000)) {
+            targetCode = child.key;
           }
         });
-
-        if (foundCode) {
-          await joinFirebaseRoom(foundCode);
+        if (targetCode) {
+          await joinRoom(targetCode);
         } else {
-          await createFirebaseRoom(true);
-          setStatus('<span class="pulse-dot"></span>Açık oda kuruldu, ikinci oyuncu bekleniyor...');
+          await createRoom(true);
+          setStatus('<span class="radar-spinner"></span>Açık oda kuruldu! Rastgele oyuncu bekleniyor...');
         }
-      } catch (err) {
-        setStatus("Eşleştirme hatası: " + err.message);
+      } catch (e) {
+        setStatus("Eşleştirme hatası: " + e.message);
       }
     }
 
-    async function joinFirebaseRoom(code) {
+    async function joinRoom(code) {
       if (!initFirebase()) return;
       SoundFX.unlock();
-
-      if (!code || code.length !== 4) {
+      code = String(code || "").trim();
+      if (code.length !== 4) {
         setStatus("Lütfen 4 haneli oda kodunu gir.");
         return;
       }
 
-      setStatus('<span class="pulse-dot"></span>Odaya bağlanılıyor...');
+      setStatus('<span class="radar-spinner"></span>Odaya bağlanılıyor...');
       const ref = db.ref(`${ROOMS_PATH}/${code}`);
-
       try {
         const snap = await ref.once("value");
         const data = snap.val();
-
-        if (!data || !data.hostOnline) {
+        if (!data || !data.hostOnline || (Date.now() - (data.hostHeartbeat || 0) > 30000)) {
           setStatus("Bu koda ait aktif bir oda bulunamadı.");
           return;
         }
-        if (data.guestOnline) {
+        // Çakışma olmaması için atomik koltuk rezervasyonu
+        const tx = await ref.child("guestOnline").transaction((curr) => (curr ? undefined : true));
+        if (!tx.committed) {
           setStatus("Bu oda şu anda dolu.");
           return;
         }
@@ -1075,38 +1652,40 @@
         roomRef = ref;
         guestReady = false;
         gameStarted = false;
-        lastHandledEventId = 0;
+        lastEventId = 0;
 
         await roomRef.update({
-          guestOnline: true,
+          guestName: getNick(),
           guestReady: false,
           guestInput: { left: false, right: false, jump: false }
         });
-
         roomRef.child("guestOnline").onDisconnect().set(false);
         roomRef.child("guestReady").onDisconnect().set(false);
+        roomRef.child("guestName").onDisconnect().set("");
 
-        setupRoomUI(code, !!data.isPublic, false);
-        listenRoomAsGuest();
-      } catch (err) {
-        setStatus("Bağlantı hatası: " + err.message);
+        openWaitingRoomUI(code, !!data.isPublic, false);
+        attachGuestListener();
+      } catch (e) {
+        setStatus("Bağlantı hatası: " + e.message);
       }
     }
 
-    function setupRoomUI(code, isPublic, isHost) {
-      switchLobbyScreen("room");
-      document.getElementById("roomTypeLabel").textContent = isPublic ? "⚡ RASTGELE EŞLEŞME ODASI" : "🔒 ÖZEL ODA";
+    function openWaitingRoomUI(code, isPublic, isHost) {
+      document.getElementById("menuCard").style.display = "none";
+      document.getElementById("roomCard").style.display = "flex";
+      document.getElementById("roomTypeLabel").textContent = isPublic ? "⚡ AÇIK EŞLEŞME ODASI" : "🔒 ÖZEL ODA";
       document.getElementById("roomCodeDisplay").textContent = code;
+      document.getElementById("levelPickerWrap").style.display = isHost ? "flex" : "none";
 
       const btnStart = document.getElementById("btnStartGame");
       const btnReady = document.getElementById("btnToggleReady");
-
       if (isHost) {
         btnStart.style.display = "flex";
         btnStart.disabled = true;
         btnStart.textContent = "⏳ Su Oyuncusu Bekleniyor...";
         btnReady.style.display = "none";
-        setStatus("İkinci oyuncu katılıp hazır verdiğinde oyunu başlatabilirsin.");
+        document.getElementById("fireName").textContent = getNick();
+        setStatus("Su oyuncusu katılıp Hazır verince oyunu başlatabilirsin.");
       } else {
         btnStart.style.display = "none";
         btnReady.style.display = "flex";
@@ -1116,669 +1695,406 @@
       }
     }
 
-    function listenRoomAsHost() {
+    function attachHostListener() {
       roomRef.on("value", (snap) => {
-        const data = snap.val();
-        if (!data) return;
+        const d = snap.val();
+        if (!d) return;
 
-        const waterSlot = document.getElementById("slotWater");
-        const waterStatus = document.getElementById("waterStatus");
+        const wCard = document.getElementById("slotWater");
+        const wName = document.getElementById("waterName");
+        const wBadge = document.getElementById("waterBadge");
         const btnStart = document.getElementById("btnStartGame");
 
-        if (data.guestOnline) {
-          waterSlot.classList.add("water-active");
-          if (data.guestReady) {
-            waterStatus.textContent = "✅ Hazır!";
-            waterStatus.className = "slot-status ready";
+        if (d.guestOnline) {
+          wCard.classList.add("water-on");
+          wName.textContent = d.guestName || "Su Oyuncusu";
+          if (d.guestReady) {
+            wBadge.textContent = "✅ Hazır!";
+            wBadge.className = "slot-badge ready";
             btnStart.disabled = false;
             btnStart.textContent = "🚀 Oyunu Başlat";
-            if (!gameStarted) setStatus("Su oyuncusu hazır! Oyunu başlatabilirsin.");
+            if (!gameStarted) setStatus("İkiniz de hazırsınız! Oyunu Başlat butonuna bas.");
           } else {
-            waterStatus.textContent = "Hazırlanıyor...";
-            waterStatus.className = "slot-status";
+            wBadge.textContent = "Hazırlanıyor...";
+            wBadge.className = "slot-badge";
             btnStart.disabled = true;
             btnStart.textContent = "⏳ Su Hazır Bekleniyor...";
-            if (!gameStarted) setStatus("Su oyuncusu odaya girdi, hazır vermesi bekleniyor.");
+            if (!gameStarted) setStatus(`${d.guestName || "Su"} odaya girdi, hazır vermesi bekleniyor.`);
           }
         } else {
-          waterSlot.classList.remove("water-active");
-          waterStatus.textContent = "Bekleniyor...";
-          waterStatus.className = "slot-status";
+          wCard.classList.remove("water-on");
+          wName.textContent = "Bekleniyor...";
+          wBadge.textContent = "Boş";
+          wBadge.className = "slot-badge";
           btnStart.disabled = true;
           btnStart.textContent = "⏳ Su Oyuncusu Bekleniyor...";
-          if (gameStarted) showToast("Su oyuncusunun bağlantısı kesildi!");
+          if (gameStarted) showToast("Su oyuncusu oyundan çıktı!");
         }
 
-        if (data.guestInput) remoteInput = data.guestInput;
-
-        if (gameStarted && data.restartReq && data.restartReq !== lastRestartReq) {
-          lastRestartReq = data.restartReq;
+        if (d.guestInput) remoteInput = d.guestInput;
+        if (gameStarted && d.restartReq && d.restartReq !== lastRestartReq) {
+          lastRestartReq = d.restartReq;
           loadLevel(state.levelIdx);
         }
       });
     }
 
-    function listenRoomAsGuest() {
+    function attachGuestListener() {
       roomRef.on("value", (snap) => {
-        const data = snap.val();
-        if (!data || !data.hostOnline) {
+        const d = snap.val();
+        if (!d || !d.hostOnline) {
           leaveRoom();
           setStatus("Kurucu odayı kapattı.");
           return;
         }
+        document.getElementById("fireName").textContent = d.hostName || "Ateş";
+        const wCard = document.getElementById("slotWater");
+        wCard.classList.add("water-on");
+        document.getElementById("waterName").textContent = getNick();
+        const wBadge = document.getElementById("waterBadge");
+        wBadge.textContent = d.guestReady ? "✅ Hazır!" : "Hazır Değil";
+        wBadge.className = d.guestReady ? "slot-badge ready" : "slot-badge";
 
-        const waterSlot = document.getElementById("slotWater");
-        const waterStatus = document.getElementById("waterStatus");
-        waterSlot.classList.add("water-active");
-
-        if (data.guestReady) {
-          waterStatus.textContent = "✅ Hazır!";
-          waterStatus.className = "slot-status ready";
-        } else {
-          waterStatus.textContent = "Hazır Değil";
-          waterStatus.className = "slot-status";
-        }
-
-        if (data.status === "playing" && !gameStarted) {
+        if (d.status === "playing" && !gameStarted) {
           gameStarted = true;
-          SoundFX.playLevelWin();
-          startGameScreen();
+          SoundFX.win();
+          enterGameScreen(d.startLevel || 0);
         }
 
-        if (gameStarted && data.state) {
+        if (gameStarted && d.state) {
           const prevLvl = state.levelIdx;
           const prevGems = state.gemsCollected || [];
           const prevActive = state.activeIds || {};
-          const prevFire = { ...state.fire };
-          const prevWater = { ...state.water };
+          const prevF = { ...state.fire }, prevW = { ...state.water };
 
-          const nextState = data.state;
-          nextState.gemsCollected = nextState.gemsCollected || [];
-          nextState.activeIds = nextState.activeIds || {};
+          const ns = d.state;
+          ns.gemsCollected = ns.gemsCollected || [];
+          ns.activeIds = ns.activeIds || {};
 
-          if (nextState.levelIdx === prevLvl) {
-            const lvl = LEVELS[nextState.levelIdx];
-            nextState.gemsCollected.forEach((col, idx) => {
+          if (ns.levelIdx !== prevLvl) {
+            buildLevel3D(ns.levelIdx);
+            smoothPos.fire = { x: ns.fire.x, y: ns.fire.y };
+            smoothPos.water = { x: ns.water.x, y: ns.water.y };
+            showToast(LEVELS[ns.levelIdx].name);
+          } else {
+            ns.gemsCollected.forEach((col, idx) => {
               if (col && !prevGems[idx]) {
-                spawnGemBurst(lvl.gems[idx]);
-                SoundFX.playGem();
+                const gm = LEVELS[ns.levelIdx].gems[idx];
+                burst3D(gm.x, gm.y, gm.type === "fire" ? [0xff5252, 0xffd54f] : [0x40c4ff, 0xffffff], 18);
+                SoundFX.gem();
               }
             });
-            const anyGateChanged = Object.keys({ ...prevActive, ...nextState.activeIds })
-              .some((k) => !!prevActive[k] !== !!nextState.activeIds[k]);
-            if (anyGateChanged) SoundFX.playDoor(true);
+            const gateChanged = Object.keys({ ...prevActive, ...ns.activeIds }).some((k) => !!prevActive[k] !== !!ns.activeIds[k]);
+            if (gateChanged) SoundFX.door(true);
           }
 
-          if (nextState.event && nextState.event.id && nextState.event.id !== lastHandledEventId) {
-            lastHandledEventId = nextState.event.id;
-            if (nextState.event.text) showToast(nextState.event.text);
-            if (nextState.event.type === "death_fire") {
-              spawnDeathBurst(prevFire.x, prevFire.y, "fire");
-              SoundFX.playDeath();
-            } else if (nextState.event.type === "death_water") {
-              spawnDeathBurst(prevWater.x, prevWater.y, "water");
-              SoundFX.playDeath();
-            } else if (nextState.event.type === "win") {
-              SoundFX.playLevelWin();
+          if (ns.event && ns.event.id && ns.event.id !== lastEventId) {
+            lastEventId = ns.event.id;
+            if (ns.event.text) showToast(ns.event.text);
+            if (ns.event.type === "death_fire") {
+              burst3D(prevF.x + PW / 2, prevF.y + PH / 2, [0xcfd8dc, 0xff8a65], 20);
+              SoundFX.death();
+            } else if (ns.event.type === "death_water") {
+              burst3D(prevW.x + PW / 2, prevW.y + PH / 2, [0xe1f5fe, 0x80d8ff], 20);
+              SoundFX.death();
+            } else if (ns.event.type === "win") {
+              SoundFX.win();
             }
           }
 
-          if (nextState.levelIdx !== prevLvl) showToast(LEVELS[nextState.levelIdx].name);
-
-          state = nextState;
+          state = ns;
           updateHud();
         }
       });
     }
 
     async function leaveRoom() {
+      clearInterval(heartbeatInt);
       if (roomRef) {
         roomRef.off();
         if (mode === "host") await roomRef.remove();
-        else if (mode === "guest") await roomRef.update({ guestOnline: false, guestReady: false });
+        else if (mode === "guest") await roomRef.update({ guestOnline: false, guestReady: false, guestName: "" });
         roomRef = null;
       }
       currentRoomCode = null;
       gameStarted = false;
       guestReady = false;
-      document.getElementById("gameWrapper").style.display = "none";
-      document.getElementById("lobby").style.display = "flex";
-      switchLobbyScreen("menu");
-      requestAnimationFrame(renderLobbyBackground);
-      setStatus("Odadan ayrıldın.");
+      appScreen = "lobby";
+      document.getElementById("gameHudOverlay").style.display = "none";
+      document.getElementById("lobbyOverlay").style.display = "flex";
+      document.getElementById("roomCard").style.display = "none";
+      document.getElementById("menuCard").style.display = "flex";
+      buildLevel3D(0);
+      setStatus("Ana menüdesin.");
     }
 
-    document.getElementById("btnQuickMatch").addEventListener("click", quickMatchmaking);
-    document.getElementById("btnCreatePrivate").addEventListener("click", () => createFirebaseRoom(false));
-    document.getElementById("btnJoinCode").addEventListener("click", () => {
-      joinFirebaseRoom(document.getElementById("inputCode").value.trim());
+    // Lobi Butonları
+    document.getElementById("btnQuickMatch").addEventListener("click", quickMatch);
+    document.getElementById("btnCreatePublic").addEventListener("click", () => createRoom(true));
+    document.getElementById("btnCreatePrivate").addEventListener("click", () => createRoom(false));
+    document.getElementById("btnJoinCode").addEventListener("click", () => joinRoom(document.getElementById("inputCode").value));
+    document.getElementById("btnLeaveRoom").addEventListener("click", leaveRoom);
+    document.getElementById("btnExitGame").addEventListener("click", leaveRoom);
+
+    document.getElementById("btnShareLink").addEventListener("click", async () => {
+      const url = `${location.origin}${location.pathname}?oda=${currentRoomCode}`;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: "Ateş & Su 3D", text: `Oda Kodu: ${currentRoomCode}`, url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          showToast("Davet linki kopyalandı!");
+        }
+      } catch {
+        setStatus("Oda Kodu: " + currentRoomCode);
+      }
     });
 
     document.getElementById("btnToggleReady").addEventListener("click", async () => {
       if (!roomRef || mode !== "guest") return;
       guestReady = !guestReady;
-      SoundFX.playReady();
-      const btn = document.getElementById("btnToggleReady");
-      if (guestReady) {
-        btn.className = "btn btn-ready-on";
-        btn.textContent = "✅ Hazırsın (Kurucu Bekleniyor)";
-        setStatus("Hazır verdin! Kurucu oyunu başlattığında otomatik gireceksin.");
-      } else {
-        btn.className = "btn btn-ready-off";
-        btn.textContent = "✋ Hazır Ver";
-        setStatus("Hazır durumunu iptal ettin.");
-      }
+      SoundFX.ready();
+      const b = document.getElementById("btnToggleReady");
+      b.className = guestReady ? "btn btn-ready-on" : "btn btn-ready-off";
+      b.textContent = guestReady ? "✅ Hazırsın (Kurucu Bekleniyor)" : "✋ Hazır Ver";
       await roomRef.update({ guestReady });
     });
 
     document.getElementById("btnStartGame").addEventListener("click", async () => {
       if (!roomRef || mode !== "host") return;
-      SoundFX.playLevelWin();
+      SoundFX.win();
       gameStarted = true;
-      loadLevel(0);
+      loadLevel(selectedStartLevel);
       await roomRef.update({ status: "playing", isPublic: false, state });
-      startGameScreen();
+      enterGameScreen(selectedStartLevel);
     });
-
-    document.getElementById("btnLeaveRoom").addEventListener("click", leaveRoom);
 
     document.getElementById("btnSolo").addEventListener("click", () => {
       SoundFX.unlock();
       mode = "solo";
       gameStarted = true;
-      startGameScreen();
+      loadLevel(0);
+      enterGameScreen(0);
     });
 
-    // =========================================================================
-    // 7. GÖRSEL ANİMASYON VE PARÇACIK MOTORU
-    // =========================================================================
-    const MAX_PARTICLES = 190;
-    let particles = [];
-    let animTick = 0;
-
-    const visualState = {
-      fire: { walkPhase: 0, squashX: 1, squashY: 1, wasGrounded: true, blink: 0, trailX: 0 },
-      water: { walkPhase: 0, squashX: 1, squashY: 1, wasGrounded: true, blink: 2.4, trailX: 0 },
-      prevActiveIds: {}
-    };
-
-    const bgCanvas = document.createElement("canvas");
-    bgCanvas.width = W;
-    bgCanvas.height = H;
-    const bgCtx = bgCanvas.getContext("2d");
-
-    function buildTempleBackground() {
-      const bgGrad = bgCtx.createLinearGradient(0, 0, 0, H);
-      bgGrad.addColorStop(0, "#1c1726");
-      bgGrad.addColorStop(0.5, "#14111c");
-      bgGrad.addColorStop(1, "#0d0b12");
-      bgCtx.fillStyle = bgGrad;
-      bgCtx.fillRect(0, 0, W, H);
-
-      let seed = 42;
-      const rand = () => {
-        seed = (seed * 16807) % 2147483647;
-        return (seed - 1) / 2147483646;
-      };
-
-      // 3D Derinlikli Taş Tuğla Örgüsü
-      const bw = 48, bh = 24;
-      for (let row = 0; row < H / bh + 1; row++) {
-        const offset = (row % 2) * (bw / 2);
-        for (let col = -1; col < W / bw + 1; col++) {
-          const x = col * bw + offset;
-          const y = row * bh;
-          const shade = Math.floor(23 + rand() * 14);
-          const warm = Math.floor(rand() * 5);
-          bgCtx.fillStyle = `rgb(${shade + warm}, ${shade - 2}, ${shade + 8})`;
-          bgCtx.fillRect(x + 1, y + 1, bw - 2, bh - 2);
-
-          // 3B üst ışık ve alt gölge kenarı
-          bgCtx.fillStyle = "rgba(255,255,255,0.035)";
-          bgCtx.fillRect(x + 1, y + 1, bw - 2, 2);
-          bgCtx.fillStyle = "rgba(0,0,0,0.28)";
-          bgCtx.fillRect(x + 1, y + bh - 3, bw - 2, 2);
-
-          if (rand() < 0.14) {
-            bgCtx.strokeStyle = "rgba(0,0,0,0.38)";
-            bgCtx.lineWidth = 1;
-            bgCtx.beginPath();
-            bgCtx.moveTo(x + 10 + rand() * 20, y + 2);
-            bgCtx.lineTo(x + 14 + rand() * 14, y + 10 + rand() * 8);
-            bgCtx.stroke();
-          }
-        }
-      }
-
-      // Silindirik 3B Tapınak Sütunları
-      const pillarXs = [155, 400, 645];
-      for (const px of pillarXs) {
-        const pGrad = bgCtx.createLinearGradient(px - 24, 0, px + 24, 0);
-        pGrad.addColorStop(0, "rgba(0,0,0,0.48)");
-        pGrad.addColorStop(0.32, "rgba(74,64,88,0.26)");
-        pGrad.addColorStop(0.7, "rgba(35,30,44,0.25)");
-        pGrad.addColorStop(1, "rgba(0,0,0,0.55)");
-        bgCtx.fillStyle = pGrad;
-        bgCtx.fillRect(px - 22, 20, 44, H - 40);
-
-        bgCtx.fillStyle = "rgba(0,0,0,0.3)";
-        for (let py = 40; py < H - 40; py += 45) {
-          bgCtx.fillRect(px - 24, py, 48, 4);
-        }
-      }
-
-      // Tavan Sarmaşıkları
-      const vines = [
-        { x: 65, len: 55 }, { x: 180, len: 38 }, { x: 315, len: 48 },
-        { x: 510, len: 42 }, { x: 725, len: 58 }
-      ];
-      for (const v of vines) {
-        bgCtx.strokeStyle = "#203828";
-        bgCtx.lineWidth = 2.5;
-        bgCtx.beginPath();
-        bgCtx.moveTo(v.x, 20);
-        bgCtx.quadraticCurveTo(v.x + 8, 20 + v.len * 0.5, v.x - 4, 20 + v.len);
-        bgCtx.stroke();
-
-        bgCtx.fillStyle = "#2e5239";
-        for (let t = 14; t < v.len; t += 14) {
-          bgCtx.beginPath();
-          bgCtx.ellipse(v.x + (t % 28 === 0 ? 5 : -5), 20 + t, 5, 2.5, 0.4, 0, Math.PI * 2);
-          bgCtx.fill();
-        }
-      }
-
-      const vig = bgCtx.createRadialGradient(W / 2, H / 2, 180, W / 2, H / 2, 520);
-      vig.addColorStop(0, "rgba(0,0,0,0)");
-      vig.addColorStop(1, "rgba(0,0,0,0.55)");
-      bgCtx.fillStyle = vig;
-      bgCtx.fillRect(0, 0, W, H);
-    }
-
-    buildTempleBackground();
-
-    function spawnParticle(p) {
-      if (particles.length >= MAX_PARTICLES) particles.shift();
-      particles.push({
-        x: p.x,
-        y: p.y,
-        vx: p.vx || 0,
-        vy: p.vy || 0,
-        size: p.size || 3,
-        color: p.color || "#fff",
-        life: p.life || 30,
-        maxLife: p.life || 30,
-        gravity: p.gravity ?? 0,
-        drag: p.drag ?? 0.98,
-        glow: !!p.glow,
-        kind: p.kind || "dot"
-      });
-    }
-
-    function spawnGemBurst(gem) {
-      const colors = gem.type === "fire"
-        ? ["#ff5252", "#ffab40", "#fff59d"]
-        : ["#40c4ff", "#80d8ff", "#ffffff"];
-      for (let i = 0; i < 16; i++) {
-        const angle = (Math.PI * 2 * i) / 16 + Math.random() * 0.3;
-        const speed = 1.5 + Math.random() * 3.2;
-        spawnParticle({
-          x: gem.x, y: gem.y,
-          vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
-          size: 2.2 + Math.random() * 2.5,
-          color: colors[i % colors.length],
-          life: 24 + Math.random() * 14,
-          gravity: 0.05, drag: 0.94, glow: true
-        });
-      }
-    }
-
-    function spawnFootDust(x, y, type, count = 4) {
-      const col = type === "fire" ? "#ff9e64" : "#80d8ff";
-      for (let i = 0; i < count; i++) {
-        spawnParticle({
-          x: x + (Math.random() - 0.5) * 14, y: y - 2,
-          vx: (Math.random() - 0.5) * 2.2, vy: -0.4 - Math.random() * 1.4,
-          size: 2 + Math.random() * 2.5,
-          color: i % 2 === 0 ? "rgba(210,200,220,0.75)" : col,
-          life: 16 + Math.random() * 10,
-          gravity: -0.02, drag: 0.93
-        });
-      }
-    }
-
-    function spawnDeathBurst(x, y, type) {
-      const colors = type === "fire"
-        ? ["#cfd8dc", "#ff8a65", "#90a4ae"]
-        : ["#e1f5fe", "#b3e5fc", "#ffffff"];
-      for (let i = 0; i < 22; i++) {
-        const a = Math.random() * Math.PI * 2;
-        const sp = 1 + Math.random() * 3;
-        spawnParticle({
-          x: x + PW / 2, y: y + PH / 2,
-          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.2,
-          size: 3 + Math.random() * 4,
-          color: colors[i % colors.length],
-          life: 28 + Math.random() * 16,
-          gravity: -0.04, drag: 0.95, glow: true
-        });
-      }
-    }
-
-    function spawnAmbientParticles(lvl) {
-      for (const t of lvl.torches) {
-        if (Math.random() < 0.22) {
-          spawnParticle({
-            x: t.x + (Math.random() - 0.5) * 6, y: t.y - 12,
-            vx: (Math.random() - 0.5) * 0.45, vy: -0.7 - Math.random() * 0.9,
-            size: 1.4 + Math.random() * 1.5,
-            color: Math.random() < 0.5 ? "#ffca28" : "#ff7043",
-            life: 22 + Math.random() * 18,
-            gravity: -0.01, drag: 0.99, glow: true
-          });
-        }
-      }
-
-      // Çukur havuzlardan çıkan gerçekçi kıvılcım / baloncuk / zehir buharı
-      for (const hz of lvl.hazards) {
-        if (Math.random() < 0.2) {
-          const px = hz.x + 8 + Math.random() * (hz.w - 16);
-          if (hz.type === "lava") {
-            spawnParticle({
-              x: px, y: hz.y + 3,
-              vx: (Math.random() - 0.5) * 0.55, vy: -0.9 - Math.random() * 1.2,
-              size: 1.7 + Math.random() * 1.8,
-              color: Math.random() < 0.5 ? "#ffd54f" : "#ff3d00",
-              life: 22 + Math.random() * 15, gravity: 0.025, glow: true
-            });
-          } else if (hz.type === "water") {
-            spawnParticle({
-              x: px, y: hz.y + 4,
-              vx: (Math.random() - 0.5) * 0.3, vy: -0.6 - Math.random() * 0.7,
-              size: 1.8 + Math.random() * 1.6,
-              color: "#b3e5fc",
-              life: 18 + Math.random() * 14, kind: "ring"
-            });
-          } else {
-            spawnParticle({
-              x: px, y: hz.y + 3,
-              vx: (Math.random() - 0.5) * 0.45, vy: -0.7 - Math.random() * 0.9,
-              size: 2.3 + Math.random() * 2,
-              color: "#76ff03",
-              life: 24 + Math.random() * 16, kind: "ring", glow: true
-            });
-          }
-        }
-      }
-
-      const fireMoving = Math.abs(state.fire.vx) > 0.2 || !state.fire.grounded;
-      if (Math.random() < (fireMoving ? 0.55 : 0.22)) {
-        spawnParticle({
-          x: state.fire.x + PW / 2 + (Math.random() - 0.5) * 10,
-          y: state.fire.y + 6 + Math.random() * 10,
-          vx: -state.fire.vx * 0.15 + (Math.random() - 0.5) * 0.5,
-          vy: -0.6 - Math.random() * 0.9,
-          size: 1.6 + Math.random() * 2,
-          color: Math.random() < 0.5 ? "#ffd54f" : "#ff5722",
-          life: 16 + Math.random() * 14, glow: true
-        });
-      }
-
-      const waterMoving = Math.abs(state.water.vx) > 0.2 || !state.water.grounded;
-      if (Math.random() < (waterMoving ? 0.5 : 0.18)) {
-        spawnParticle({
-          x: state.water.x + PW / 2 + (Math.random() - 0.5) * 10,
-          y: state.water.y + 10 + Math.random() * 12,
-          vx: -state.water.vx * 0.15 + (Math.random() - 0.5) * 0.5,
-          vy: -0.2 + Math.random() * 0.6,
-          size: 1.6 + Math.random() * 1.8,
-          color: Math.random() < 0.5 ? "#80d8ff" : "#e1f5fe",
-          life: 18 + Math.random() * 14, gravity: 0.03, glow: true
-        });
-      }
-    }
-
-    function updateParticles(dt) {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vy += p.gravity * dt;
-        p.vx *= Math.pow(p.drag, dt);
-        p.vy *= Math.pow(p.drag, dt);
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
-    }
-
-    function updateVisualAnimations(dt) {
-      const pairs = [
-        { p: state.fire, v: visualState.fire, type: "fire" },
-        { p: state.water, v: visualState.water, type: "water" }
-      ];
-
-      for (const { p, v, type } of pairs) {
-        const speed = Math.abs(p.vx);
-        if (speed > 0.2 && p.grounded) {
-          v.walkPhase += 0.34 * dt;
-          if (Math.random() < 0.16) spawnFootDust(p.x + PW / 2, p.y + PH, type, 1);
-        } else {
-          v.walkPhase *= Math.pow(0.85, dt);
-        }
-
-        if (!p.grounded && v.wasGrounded && p.vy < -1) {
-          v.squashX = 0.78;
-          v.squashY = 1.24;
-          spawnFootDust(p.x + PW / 2, p.y + PH, type, 5);
-          if (mode === "guest") SoundFX.playJump(type === "fire");
-        } else if (p.grounded && !v.wasGrounded) {
-          v.squashX = 1.25;
-          v.squashY = 0.76;
-          spawnFootDust(p.x + PW / 2, p.y + PH, type, 6);
-        }
-
-        v.squashX += (1 - v.squashX) * 0.2 * dt;
-        v.squashY += (1 - v.squashY) * 0.2 * dt;
-        v.trailX += (-p.vx * 1.4 - v.trailX) * 0.18 * dt;
-        v.wasGrounded = p.grounded;
-        v.blink = (v.blink + 0.02 * dt) % 4.5;
-      }
-
-      const lvl = LEVELS[state.levelIdx];
-      for (const b of lvl.buttons) {
-        const nowOn = !!(state.activeIds && state.activeIds[b.targetId]);
-        const wasOn = !!visualState.prevActiveIds[b.targetId];
-        if (nowOn && !wasOn) {
-          for (let i = 0; i < 8; i++) {
-            spawnParticle({
-              x: b.x + b.w / 2, y: b.y,
-              vx: (Math.random() - 0.5) * 3, vy: -1 - Math.random() * 2,
-              size: 2.2, color: b.color, life: 18, gravity: 0.08, glow: true
-            });
-          }
-        }
-      }
-      visualState.prevActiveIds = { ...(state.activeIds || {}) };
-    }
-
-    // =========================================================================
-    // 8. OYUN EKRANI VE FİZİK SİMÜLASYONU
-    // =========================================================================
-    function startGameScreen() {
-      document.getElementById("lobby").style.display = "none";
-      document.getElementById("gameWrapper").style.display = "flex";
-
-      const badge = document.getElementById("roleBadge");
-      const switchBtn = document.getElementById("btnSwitch");
-
+    function enterGameScreen(lvlIdx) {
+      appScreen = "game";
+      document.getElementById("lobbyOverlay").style.display = "none";
+      document.getElementById("gameHudOverlay").style.display = "flex";
+      const pill = document.getElementById("rolePill");
+      const sw = document.getElementById("btnSwitch");
       if (mode === "host") {
-        badge.textContent = "🔥 Ateş (Kurucu)";
-        badge.className = "badge fire";
-        switchBtn.style.display = "none";
+        pill.textContent = "🔥 Ateş"; pill.className = "hud-pill fire"; sw.style.display = "none";
       } else if (mode === "guest") {
-        badge.textContent = "💧 Su (Misafir)";
-        badge.className = "badge water";
-        switchBtn.style.display = "none";
+        pill.textContent = "💧 Su"; pill.className = "hud-pill water"; sw.style.display = "none";
       } else {
-        badge.textContent = "🔥 Ateş (Solo)";
-        badge.className = "badge fire";
-        switchBtn.style.display = "flex";
-        loadLevel(0);
+        pill.textContent = "🔥 Ateş (Solo)"; pill.className = "hud-pill fire"; sw.style.display = "flex";
       }
-
-      if (!loopRunning) {
-        loopRunning = true;
-        lastTime = performance.now();
-        requestAnimationFrame(loop);
-      }
+      buildLevel3D(lvlIdx);
+      updateHud();
     }
 
     function loadLevel(idx) {
-      const lvl = LEVELS[idx];
+      const lvl = CARVED_LEVELS[idx];
       state.levelIdx = idx;
       state.fire = { x: lvl.spawns.fire.x, y: lvl.spawns.fire.y, vx: 0, vy: 0, grounded: false, dir: 1 };
       state.water = { x: lvl.spawns.water.x, y: lvl.spawns.water.y, vx: 0, vy: 0, grounded: false, dir: 1 };
+      smoothPos.fire = { x: lvl.spawns.fire.x, y: lvl.spawns.fire.y };
+      smoothPos.water = { x: lvl.spawns.water.x, y: lvl.spawns.water.y };
       state.gemsCollected = lvl.gems.map(() => false);
       state.activeIds = {};
-      state.wonAll = false;
-      levelTransitionLock = false;
+      levelLock = false;
+      buildLevel3D(idx);
       updateHud();
       showToast(lvl.name);
-      if (mode === "host" && roomRef && gameStarted) {
-        roomRef.child("state").set(state);
-      }
+      if (mode === "host" && roomRef && gameStarted) roomRef.child("state").set(state);
     }
 
     function updateHud() {
       const lvl = LEVELS[state.levelIdx];
-      document.getElementById("levelLabel").textContent = lvl.name;
-      const collected = (state.gemsCollected || []).filter(Boolean).length;
-      document.getElementById("gemLabel").textContent = `💎 ${collected}/${lvl.gems.length}`;
+      document.getElementById("levelPill").textContent = lvl.name;
+      const got = (state.gemsCollected || []).filter(Boolean).length;
+      document.getElementById("gemPill").textContent = `💎 ${got}/${lvl.gems.length}`;
     }
 
     document.getElementById("btnMute").addEventListener("click", (e) => {
       SoundFX.muted = !SoundFX.muted;
       e.target.textContent = SoundFX.muted ? "🔇" : "🔊";
     });
-
     document.getElementById("btnRestart").addEventListener("click", () => {
       if (mode === "guest" && roomRef) roomRef.child("restartReq").set(Date.now());
       else loadLevel(state.levelIdx);
     });
-
     document.getElementById("btnSwitch").addEventListener("click", () => {
       soloControl = soloControl === "fire" ? "water" : "fire";
-      const badge = document.getElementById("roleBadge");
-      badge.textContent = soloControl === "fire" ? "🔥 Ateş (Solo)" : "💧 Su (Solo)";
-      badge.className = soloControl === "fire" ? "badge fire" : "badge water";
+      const pill = document.getElementById("rolePill");
+      pill.textContent = soloControl === "fire" ? "🔥 Ateş (Solo)" : "💧 Su (Solo)";
+      pill.className = soloControl === "fire" ? "hud-pill fire" : "hud-pill water";
     });
 
-    function sendGuestInput() {
+    // =========================================================================
+    // 6. KESİNTİSİZ MULTI-TOUCH KONTROLLERİ (Kaydırmalı D-Pad + Bağımsız Zıpla)
+    // =========================================================================
+    function syncGuestInput() {
       if (mode === "guest" && roomRef && gameStarted) {
         roomRef.child("guestInput").set(localInput);
       }
     }
 
-    function bindTouchButton(id, key) {
-      const el = document.getElementById(id);
-      const down = (e) => {
-        e.preventDefault();
-        SoundFX.unlock();
-        if (!localInput[key]) {
-          localInput[key] = true;
-          el.classList.add("pressed");
-          sendGuestInput();
-        }
-      };
-      const up = (e) => {
-        e.preventDefault();
-        if (localInput[key]) {
-          localInput[key] = false;
-          el.classList.remove("pressed");
-          sendGuestInput();
-        }
-      };
-      el.addEventListener("pointerdown", down);
-      el.addEventListener("pointerup", up);
-      el.addEventListener("pointercancel", up);
-      el.addEventListener("pointerleave", up);
+    const dpadPad = document.getElementById("dpadPad");
+    const visLeft = document.getElementById("visualLeft");
+    const visRight = document.getElementById("visualRight");
+    const btnJump = document.getElementById("btnJump");
+
+    function setDirFromClientX(clientX) {
+      const rect = dpadPad.getBoundingClientRect();
+      const isLeft = clientX < rect.left + rect.width / 2;
+      const changed = localInput.left !== isLeft || localInput.right !== !isLeft;
+      localInput.left = isLeft;
+      localInput.right = !isLeft;
+      visLeft.classList.toggle("active", isLeft);
+      visRight.classList.toggle("active", !isLeft);
+      if (changed) syncGuestInput();
     }
 
-    bindTouchButton("btnLeft", "left");
-    bindTouchButton("btnRight", "right");
-    bindTouchButton("btnJump", "jump");
-
-    window.addEventListener("keydown", (e) => {
-      SoundFX.unlock();
-      let changed = false;
-      if ((e.code === "ArrowLeft" || e.code === "KeyA") && !localInput.left) { localInput.left = true; changed = true; }
-      if ((e.code === "ArrowRight" || e.code === "KeyD") && !localInput.right) { localInput.right = true; changed = true; }
-      if ((e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") && !localInput.jump) { localInput.jump = true; changed = true; }
-      if (e.code === "Tab" && mode === "solo") {
-        e.preventDefault();
-        document.getElementById("btnSwitch").click();
+    function clearDir() {
+      if (localInput.left || localInput.right) {
+        localInput.left = false;
+        localInput.right = false;
+        visLeft.classList.remove("active");
+        visRight.classList.remove("active");
+        syncGuestInput();
       }
-      if (changed) sendGuestInput();
-    });
+    }
 
+    let dpadTouchId = null;
+    dpadPad.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      SoundFX.unlock();
+      const t = e.changedTouches[0];
+      dpadTouchId = t.identifier;
+      setDirFromClientX(t.clientX);
+    }, { passive: false });
+
+    dpadPad.addEventListener("touchmove", (e) => {
+      e.preventDefault();
+      for (const t of e.touches) {
+        if (t.identifier === dpadTouchId) setDirFromClientX(t.clientX);
+      }
+    }, { passive: false });
+
+    dpadPad.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      for (const t of e.changedTouches) {
+        if (t.identifier === dpadTouchId) { dpadTouchId = null; clearDir(); }
+      }
+    }, { passive: false });
+    dpadPad.addEventListener("touchcancel", () => { dpadTouchId = null; clearDir(); });
+
+    // Masaüstü fare desteği
+    let mouseDpad = false;
+    dpadPad.addEventListener("mousedown", (e) => { mouseDpad = true; setDirFromClientX(e.clientX); });
+    window.addEventListener("mousemove", (e) => { if (mouseDpad) setDirFromClientX(e.clientX); });
+    window.addEventListener("mouseup", () => { if (mouseDpad) { mouseDpad = false; clearDir(); } });
+
+    // Zıplama Butonu (Sol elden %100 bağımsız)
+    function setJump(down) {
+      if (localInput.jump !== down) {
+        localInput.jump = down;
+        btnJump.classList.toggle("active", down);
+        syncGuestInput();
+      }
+    }
+    btnJump.addEventListener("touchstart", (e) => { e.preventDefault(); SoundFX.unlock(); setJump(true); }, { passive: false });
+    btnJump.addEventListener("touchend", (e) => { e.preventDefault(); setJump(false); }, { passive: false });
+    btnJump.addEventListener("touchcancel", () => setJump(false));
+    btnJump.addEventListener("mousedown", () => setJump(true));
+    btnJump.addEventListener("mouseup", () => setJump(false));
+    btnJump.addEventListener("mouseleave", () => setJump(false));
+
+    // Klavye Desteği
+    window.addEventListener("keydown", (e) => {
+      if (document.activeElement === nickInput || document.activeElement === document.getElementById("inputCode")) return;
+      SoundFX.unlock();
+      let ch = false;
+      if ((e.code === "ArrowLeft" || e.code === "KeyA") && !localInput.left) { localInput.left = true; ch = true; }
+      if ((e.code === "ArrowRight" || e.code === "KeyD") && !localInput.right) { localInput.right = true; ch = true; }
+      if ((e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") && !localInput.jump) { localInput.jump = true; ch = true; }
+      if (e.code === "Tab" && mode === "solo") { e.preventDefault(); document.getElementById("btnSwitch").click(); }
+      if (ch) syncGuestInput();
+    });
     window.addEventListener("keyup", (e) => {
-      let changed = false;
-      if (e.code === "ArrowLeft" || e.code === "KeyA") { localInput.left = false; changed = true; }
-      if (e.code === "ArrowRight" || e.code === "KeyD") { localInput.right = false; changed = true; }
-      if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") { localInput.jump = false; changed = true; }
-      if (changed) sendGuestInput();
+      let ch = false;
+      if (e.code === "ArrowLeft" || e.code === "KeyA") { localInput.left = false; ch = true; }
+      if (e.code === "ArrowRight" || e.code === "KeyD") { localInput.right = false; ch = true; }
+      if (e.code === "ArrowUp" || e.code === "KeyW" || e.code === "Space") { localInput.jump = false; ch = true; }
+      if (ch) syncGuestInput();
     });
 
-    function rectsOverlap(a, b) {
+    // =========================================================================
+    // 7. FİZİK SİMÜLASYONU (Gerçek Çukur Girişi + Step-Up + Coyote Time)
+    // =========================================================================
+    function overlap(a, b) {
       return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
     }
 
-    function getSolidRects(lvl) {
-      const solids = [...lvl.walls];
+    function getSolids(lvl) {
+      const s = [...lvl.carvedWalls];
       for (const g of lvl.gates) {
         const active = !!(state.activeIds && state.activeIds[g.id]);
-        if (g.kind === "gate" && !active) solids.push(g);
-        if (g.kind === "bridge" && active) solids.push(g);
+        if (g.kind === "gate" && !active) s.push(g);
+        if (g.kind === "bridge" && active) s.push(g);
       }
-      return solids;
+      return s;
     }
 
-    function updatePlayer(p, input, solids, dt, isFire) {
-      if (input.left && !input.right) {
-        p.vx = -MOVE_SPEED;
-        p.dir = -1;
-      } else if (input.right && !input.left) {
-        p.vx = MOVE_SPEED;
-        p.dir = 1;
-      } else {
-        p.vx = 0;
-      }
+    function movePlayer(p, ex, input, solids, dt, isFire) {
+      if (input.left && !input.right) { p.vx = -MOVE_SPEED; p.dir = -1; }
+      else if (input.right && !input.left) { p.vx = MOVE_SPEED; p.dir = 1; }
+      else p.vx = 0;
 
-      if (input.jump && p.grounded) {
+      // Coyote Time & Jump Buffer
+      if (p.grounded) ex.coyote = 7.5;
+      else ex.coyote = Math.max(0, ex.coyote - dt);
+
+      if (input.jump) ex.jumpBuf = 8.5;
+      else ex.jumpBuf = Math.max(0, ex.jumpBuf - dt);
+
+      if (ex.jumpBuf > 0 && ex.coyote > 0) {
         p.vy = JUMP_FORCE;
         p.grounded = false;
-        SoundFX.playJump(isFire);
+        ex.coyote = 0;
+        ex.jumpBuf = 0;
+        ex.squashY = 1.24;
+        SoundFX.jump(isFire);
       }
 
       p.vy = Math.min(p.vy + GRAVITY * dt, 14);
 
+      // Yatay hareket + Çukurdan yumuşak basamak çıkışı (step-up <= 12px)
       p.x += p.vx * dt;
       for (const s of solids) {
-        if (rectsOverlap({ x: p.x, y: p.y, w: PW, h: PH }, s)) {
+        if (overlap({ x: p.x, y: p.y, w: PW, h: PH }, s)) {
+          const stepHeight = (p.y + PH) - s.y;
+          if (stepHeight > 0 && stepHeight <= 12.5 && p.vy >= -2) {
+            // Çukur kenarından rahatça yukarı çık
+            const testY = s.y - PH;
+            const blocked = solids.some((o) => o !== s && overlap({ x: p.x, y: testY, w: PW, h: PH }, o));
+            if (!blocked) {
+              p.y = testY;
+              continue;
+            }
+          }
           if (p.vx > 0) p.x = s.x - PW;
           else if (p.vx < 0) p.x = s.x + s.w;
-          else {
-            const centerP = p.x + PW / 2;
-            const centerS = s.x + s.w / 2;
-            p.x = centerP < centerS ? s.x - PW : s.x + s.w;
-          }
         }
       }
 
+      // Dikey hareket
       p.y += p.vy * dt;
       p.grounded = false;
       for (const s of solids) {
-        if (rectsOverlap({ x: p.x, y: p.y, w: PW, h: PH }, s)) {
+        if (overlap({ x: p.x, y: p.y, w: PW, h: PH }, s)) {
           if (p.vy > 0) {
             p.y = s.y - PH;
             p.vy = 0;
@@ -1791,747 +2107,284 @@
       }
     }
 
-    function stepSimulation(dt) {
-      const lvl = LEVELS[state.levelIdx];
+    function stepPhysics(dt) {
+      const lvl = CARVED_LEVELS[state.levelIdx];
 
-      const prevActive = state.activeIds || {};
-      const activeIds = {};
+      const prevAct = state.activeIds || {};
+      const act = {};
       const fBox = { x: state.fire.x, y: state.fire.y, w: PW, h: PH };
       const wBox = { x: state.water.x, y: state.water.y, w: PW, h: PH };
-
       for (const b of lvl.buttons) {
-        const bBox = { x: b.x, y: b.y - 4, w: b.w, h: b.h + 4 };
-        if (rectsOverlap(fBox, bBox) || rectsOverlap(wBox, bBox)) {
-          activeIds[b.targetId] = true;
-        }
+        const bb = { x: b.x, y: b.y - 4, w: b.w, h: b.h + 4 };
+        if (overlap(fBox, bb) || overlap(wBox, bb)) act[b.targetId] = true;
       }
-
-      const allKeys = new Set([...Object.keys(prevActive), ...Object.keys(activeIds)]);
-      for (const k of allKeys) {
-        if (!!prevActive[k] !== !!activeIds[k]) SoundFX.playDoor(!!activeIds[k]);
+      const keys = new Set([...Object.keys(prevAct), ...Object.keys(act)]);
+      for (const k of keys) {
+        if (!!prevAct[k] !== !!act[k]) SoundFX.door(!!act[k]);
       }
-      state.activeIds = activeIds;
+      state.activeIds = act;
 
-      const solids = getSolidRects(lvl);
-
+      const solids = getSolids(lvl);
       const empty = { left: false, right: false, jump: false };
-      let fInput = localInput;
-      let wInput = remoteInput;
+      let fIn = localInput, wIn = remoteInput;
       if (mode === "solo") {
-        fInput = soloControl === "fire" ? localInput : empty;
-        wInput = soloControl === "water" ? localInput : empty;
+        fIn = soloControl === "fire" ? localInput : empty;
+        wIn = soloControl === "water" ? localInput : empty;
       }
 
-      updatePlayer(state.fire, fInput, solids, dt, true);
-      updatePlayer(state.water, wInput, solids, dt, false);
+      movePlayer(state.fire, pExtra.fire, fIn, solids, dt, true);
+      movePlayer(state.water, pExtra.water, wIn, solids, dt, false);
 
-      // Çukur havuzlar zeminin (y) içine gömülü olduğundan ayak tabanı y + PH >= hz.y - 1 olunca temas algılanır
-      const fHit = { x: state.fire.x + 5, y: state.fire.y + 4, w: PW - 10, h: PH - 2 };
-      const wHit = { x: state.water.x + 5, y: state.water.y + 4, w: PW - 10, h: PH - 2 };
+      // Çukur içi sıvı teması (sadece ayak gerçekten çukur sıvısının içine girerse!)
+      const fFootX = state.fire.x + PW / 2, fFootY = state.fire.y + PH;
+      const wFootX = state.water.x + PW / 2, wFootY = state.water.y + PH;
 
       for (const hz of lvl.hazards) {
-        const pitSensor = { x: hz.x + 4, y: hz.y - 2, w: hz.w - 8, h: hz.h };
-        if (rectsOverlap(fHit, pitSensor) && (hz.type === "water" || hz.type === "acid")) {
-          spawnDeathBurst(state.fire.x, state.fire.y, "fire");
-          SoundFX.playDeath();
+        const inFirePit = fFootX > hz.x + 5 && fFootX < hz.x + hz.w - 5 && fFootY > hz.y + 3 && fFootY <= hz.y + hz.depth + 6;
+        if (inFirePit && (hz.type === "water" || hz.type === "acid")) {
+          burst3D(fFootX, fFootY - 12, [0xcfd8dc, 0xff8a65], 22);
+          SoundFX.death();
           emitEvent("death_fire", "Ateş söndü! Bölüm yenileniyor...");
           loadLevel(state.levelIdx);
           return;
         }
-        if (rectsOverlap(wHit, pitSensor) && (hz.type === "lava" || hz.type === "acid")) {
-          spawnDeathBurst(state.water.x, state.water.y, "water");
-          SoundFX.playDeath();
+        const inWaterPit = wFootX > hz.x + 5 && wFootX < hz.x + hz.w - 5 && wFootY > hz.y + 3 && wFootY <= hz.y + hz.depth + 6;
+        if (inWaterPit && (hz.type === "lava" || hz.type === "acid")) {
+          burst3D(wFootX, wFootY - 12, [0xe1f5fe, 0x80d8ff], 22);
+          SoundFX.death();
           emitEvent("death_water", "Su buharlaştı! Bölüm yenileniyor...");
           loadLevel(state.levelIdx);
           return;
         }
       }
 
-      let gemChanged = false;
-      lvl.gems.forEach((g, i) => {
+      // Elmas toplama
+      let gemGot = false;
+      lvl.gems.forEach((gm, i) => {
         if (state.gemsCollected[i]) return;
-        const gBox = { x: g.x - 12, y: g.y - 12, w: 24, h: 24 };
-        if (g.type === "fire" && rectsOverlap(fHit, gBox)) {
+        const gb = { x: gm.x - 13, y: gm.y - 13, w: 26, h: 26 };
+        if (gm.type === "fire" && overlap(fBox, gb)) {
           state.gemsCollected[i] = true;
-          spawnGemBurst(g);
-          SoundFX.playGem();
-          gemChanged = true;
+          burst3D(gm.x, gm.y, [0xff5252, 0xffd54f], 18);
+          SoundFX.gem();
+          gemGot = true;
         }
-        if (g.type === "water" && rectsOverlap(wHit, gBox)) {
+        if (gm.type === "water" && overlap(wBox, gb)) {
           state.gemsCollected[i] = true;
-          spawnGemBurst(g);
-          SoundFX.playGem();
-          gemChanged = true;
+          burst3D(gm.x, gm.y, [0x40c4ff, 0xffffff], 18);
+          SoundFX.gem();
+          gemGot = true;
         }
       });
-      if (gemChanged) updateHud();
+      if (gemGot) updateHud();
 
-      const fireAtDoor = rectsOverlap(fHit, lvl.doors.fire);
-      const waterAtDoor = rectsOverlap(wHit, lvl.doors.water);
-
-      if (fireAtDoor && waterAtDoor && !levelTransitionLock) {
-        levelTransitionLock = true;
-        SoundFX.playLevelWin();
-        spawnGemBurst({ x: lvl.doors.fire.x + 20, y: lvl.doors.fire.y + 24, type: "fire" });
-        spawnGemBurst({ x: lvl.doors.water.x + 20, y: lvl.doors.water.y + 24, type: "water" });
-
+      // Kapı bitişi
+      if (overlap(fBox, lvl.doors.fire) && overlap(wBox, lvl.doors.water) && !levelLock) {
+        levelLock = true;
+        SoundFX.win();
+        burst3D(lvl.doors.fire.x + 20, lvl.doors.fire.y + 25, [0xff5722, 0xffd54f], 20);
+        burst3D(lvl.doors.water.x + 20, lvl.doors.water.y + 25, [0x29b6f6, 0xffffff], 20);
         if (state.levelIdx + 1 < LEVELS.length) {
-          emitEvent("win", "Harika! Sonraki bölüme geçiliyor...");
-          setTimeout(() => loadLevel(state.levelIdx + 1), 900);
+          emitEvent("win", "Harika! Sonraki 3D bölüme geçiliyor...");
+          setTimeout(() => loadLevel(state.levelIdx + 1), 950);
         } else {
-          state.wonAll = true;
-          emitEvent("win", "🎉 Tebrikler! Tüm bölümleri bitirdiniz!");
+          emitEvent("win", "🎉 Tebrikler! Tüm 3D Tapınağı bitirdiniz!");
           setTimeout(() => loadLevel(0), 2500);
         }
       }
     }
 
     // =========================================================================
-    // 9. 3D DERİNLİKLİ CANVAS ÇİZİM FONKSİYONLARI
+    // 8. 3D ANİMASYON VE RENDER DÖNGÜSÜ
     // =========================================================================
-    function drawTorch(t, idx) {
-      const flick = Math.sin(animTick * 4.5 + idx * 1.9) * 2.2 + Math.cos(animTick * 8 + idx) * 1.1;
-      const radius = 88 + flick * 4;
-      const glow = ctx.createRadialGradient(t.x, t.y - 12, 4, t.x, t.y - 12, radius);
-      glow.addColorStop(0, "rgba(255, 167, 38, 0.36)");
-      glow.addColorStop(0.45, "rgba(255, 112, 67, 0.13)");
-      glow.addColorStop(1, "rgba(255, 87, 34, 0)");
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(t.x, t.y - 12, radius, 0, Math.PI * 2);
-      ctx.fill();
+    let lastTime = performance.now();
+    let syncTimer = 0;
+    let tick = 0;
 
-      ctx.fillStyle = "#2c2833";
-      ctx.fillRect(t.x - 5, t.y + 4, 10, 4);
-      ctx.fillRect(t.x - 2, t.y + 8, 4, 6);
+    function animateCharacterRig(rig, p, pos, ex, dt, isFire) {
+      const moving = Math.abs(p.vx) > 0.25 && p.grounded;
+      if (moving) ex.walkPhase += 0.34 * dt;
+      else ex.walkPhase *= Math.pow(0.84, dt);
 
-      ctx.fillStyle = "#6d4c41";
-      ctx.beginPath();
-      ctx.moveTo(t.x - 3, t.y - 4);
-      ctx.lineTo(t.x + 3, t.y - 4);
-      ctx.lineTo(t.x + 2, t.y + 12);
-      ctx.lineTo(t.x - 2, t.y + 12);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = "#4e342e";
-      ctx.fillRect(t.x - 5, t.y - 6, 10, 4);
-
-      ctx.fillStyle = "#ff5722";
-      ctx.beginPath();
-      ctx.moveTo(t.x - 5, t.y - 6);
-      ctx.quadraticCurveTo(t.x - 7, t.y - 16, t.x + flick * 0.6, t.y - 24 - Math.abs(flick));
-      ctx.quadraticCurveTo(t.x + 7, t.y - 16, t.x + 5, t.y - 6);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = "#ffb300";
-      ctx.beginPath();
-      ctx.moveTo(t.x - 3.5, t.y - 6);
-      ctx.quadraticCurveTo(t.x - 4, t.y - 14, t.x + flick * 0.4, t.y - 19);
-      ctx.quadraticCurveTo(t.x + 4, t.y - 14, t.x + 3.5, t.y - 6);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = "#fff9c4";
-      ctx.beginPath();
-      ctx.arc(t.x, t.y - 9, 2.3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    function drawStoneWall3D(w) {
-      // Platform altı gölge
-      ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
-      ctx.fillRect(w.x + 3, w.y + w.h, w.w - 3, 5);
-
-      // Ana taş gövde (3D ışık-gölge gradyanı)
-      const grad = ctx.createLinearGradient(w.x, w.y, w.x, w.y + w.h);
-      grad.addColorStop(0, "#635873");
-      grad.addColorStop(0.25, "#4c4359");
-      grad.addColorStop(1, "#2a2433");
-      ctx.fillStyle = grad;
-      ctx.fillRect(w.x, w.y, w.w, w.h);
-
-      // 3D Üst Taş Tablası (Bevel)
-      if (w.h <= 45) {
-        const topGrad = ctx.createLinearGradient(w.x, w.y - 3, w.x, w.y + 4);
-        topGrad.addColorStop(0, "#857899");
-        topGrad.addColorStop(1, "#5d526e");
-        ctx.fillStyle = topGrad;
-        ctx.fillRect(w.x, w.y - 2, w.w, 5);
-
-        // Üst kenar parlak ışık çizgisi
-        ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
-        ctx.fillRect(w.x + 1, w.y - 2, w.w - 2, 1.5);
+      if (p.grounded && !ex.wasGround) ex.squashY = 0.78;
+      if (!p.grounded && ex.wasGround && p.vy < -2) {
+        ex.squashY = 1.22;
+        if (mode === "guest") SoundFX.jump(isFire);
       }
+      ex.wasGround = p.grounded;
+      ex.squashY += (1 - ex.squashY) * 0.2 * dt;
 
-      // Taş blok derzleri
-      ctx.strokeStyle = "rgba(12, 9, 18, 0.45)";
-      ctx.lineWidth = 1;
-      for (let bx = w.x + 28; bx < w.x + w.w - 4; bx += 28) {
-        ctx.beginPath();
-        ctx.moveTo(bx, w.y + 3);
-        ctx.lineTo(bx, w.y + w.h);
-        ctx.stroke();
-      }
-      for (let by = w.y + 18; by < w.y + w.h - 4; by += 18) {
-        ctx.beginPath();
-        ctx.moveTo(w.x, by);
-        ctx.lineTo(w.x + w.w, by);
-        ctx.stroke();
-      }
+      rig.group.position.set(toX(pos.x + PW / 2), toY(pos.y + PH), 0);
+      rig.bodyPivot.scale.set(1 / Math.sqrt(ex.squashY), ex.squashY, 1 / Math.sqrt(ex.squashY));
+      rig.bodyPivot.rotation.y += ((p.dir > 0 ? 0.36 : -0.36) - rig.bodyPivot.rotation.y) * 0.22 * dt;
 
-      // Doğal tapınak yosunu
-      if (w.h <= 45) {
-        ctx.fillStyle = "rgba(76, 145, 92, 0.65)";
-        for (let mx = w.x + 12; mx < w.x + w.w - 22; mx += 72) {
-          ctx.fillRect(mx, w.y - 2, 16, 3);
-        }
-      }
+      const sw = moving ? Math.sin(ex.walkPhase) * 0.75 : (!p.grounded ? 0.35 : 0);
+      rig.leftLeg.rotation.x = sw;
+      rig.rightLeg.rotation.x = -sw;
+      rig.leftArm.rotation.x = -sw * 0.85;
+      rig.rightArm.rotation.x = sw * 0.85;
+      rig.hairGroup.rotation.z = -p.vx * 0.05 + Math.sin(tick * 5 + (isFire ? 0 : 2)) * 0.08;
 
-      ctx.strokeStyle = "#1c1724";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(w.x + 0.5, w.y + 0.5, w.w - 1, w.h - 1);
-    }
-
-    // GERÇEKÇİ ÇUKUR İÇİNDE LAV / SU / ASİT HAVUZLARI
-    function drawPitHazard(hz) {
-      let deepCol, midCol, topCol, glowCol, rimCol;
-      if (hz.type === "lava") {
-        deepCol = "#7f1d00";
-        midCol = "#e64a19";
-        topCol = "#ffd54f";
-        glowCol = "rgba(255, 87, 34, 0.34)";
-        rimCol = "#8d6e63";
-      } else if (hz.type === "water") {
-        deepCol = "#013a63";
-        midCol = "#0288d1";
-        topCol = "#b3e5fc";
-        glowCol = "rgba(41, 182, 246, 0.32)";
-        rimCol = "#78909c";
-      } else {
-        deepCol = "#1b5e20";
-        midCol = "#43a047";
-        topCol = "#ccff90";
-        glowCol = "rgba(118, 255, 3, 0.3)";
-        rimCol = "#689f38";
-      }
-
-      ctx.save();
-
-      // 1. Çukurdan yukarı yükselen hacimsel ışık halesi
-      const aura = ctx.createLinearGradient(0, hz.y - 22, 0, hz.y + hz.h);
-      aura.addColorStop(0, "rgba(0,0,0,0)");
-      aura.addColorStop(1, glowCol);
-      ctx.fillStyle = aura;
-      ctx.fillRect(hz.x - 2, hz.y - 22, hz.w + 4, 24);
-
-      // 2. Platformun içine oyulmuş karanlık taş çukur yatağı (Trapez / Havuz Teknesi)
-      const inset = 5;
-      ctx.fillStyle = "#120e17";
-      ctx.beginPath();
-      ctx.moveTo(hz.x - 3, hz.y - 2);
-      ctx.lineTo(hz.x + hz.w + 3, hz.y - 2);
-      ctx.lineTo(hz.x + hz.w - inset, hz.y + hz.h + 2);
-      ctx.lineTo(hz.x + inset, hz.y + hz.h + 2);
-      ctx.closePath();
-      ctx.fill();
-
-      // 3. Çukurun içindeki sıvı (Üst yüzey taş seviyesinin 3px altında — gerçek çukur hissi)
-      const liqTop = hz.y + 3;
-      const liqBot = hz.y + hz.h;
-      const liqGrad = ctx.createLinearGradient(0, liqTop, 0, liqBot);
-      liqGrad.addColorStop(0, midCol);
-      liqGrad.addColorStop(1, deepCol);
-
-      ctx.fillStyle = liqGrad;
-      ctx.beginPath();
-      ctx.moveTo(hz.x + 2, liqBot);
-      ctx.lineTo(hz.x + 1, liqTop);
-      for (let x = 0; x <= hz.w - 2; x += 6) {
-        const wave = Math.sin(animTick * 2.8 + (hz.x + x) * 0.12) * 1.4;
-        ctx.lineTo(hz.x + 1 + x, liqTop + wave);
-      }
-      ctx.lineTo(hz.x + hz.w - 2, liqBot);
-      ctx.closePath();
-      ctx.fill();
-
-      // 4. Sıvının parlayan dalgalı yüzeyi
-      ctx.strokeStyle = topCol;
-      ctx.lineWidth = 2.2;
-      ctx.shadowColor = topCol;
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      for (let x = 1; x <= hz.w - 1; x += 6) {
-        const wave = Math.sin(animTick * 2.8 + (hz.x + x) * 0.12) * 1.4;
-        if (x === 1) ctx.moveTo(hz.x + x, liqTop + wave);
-        else ctx.lineTo(hz.x + x, liqTop + wave);
-      }
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      // 5. Çukurun sol ve sağ 3D taş dudakları (Eğimli kenarlar)
-      ctx.fillStyle = "#5c506b";
-      // Sol dudak
-      ctx.beginPath();
-      ctx.moveTo(hz.x - 4, hz.y - 2);
-      ctx.lineTo(hz.x + 2, hz.y - 2);
-      ctx.lineTo(hz.x + inset, hz.y + hz.h + 2);
-      ctx.lineTo(hz.x - 2, hz.y + hz.h + 2);
-      ctx.closePath();
-      ctx.fill();
-
-      // Sağ dudak
-      ctx.beginPath();
-      ctx.moveTo(hz.x + hz.w - 2, hz.y - 2);
-      ctx.lineTo(hz.x + hz.w + 4, hz.y - 2);
-      ctx.lineTo(hz.x + hz.w + 2, hz.y + hz.h + 2);
-      ctx.lineTo(hz.x + hz.w - inset, hz.y + hz.h + 2);
-      ctx.closePath();
-      ctx.fill();
-
-      // Çukur alt taş taban çizgisi
-      ctx.strokeStyle = rimCol;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(hz.x + inset, hz.y + hz.h + 1);
-      ctx.lineTo(hz.x + hz.w - inset, hz.y + hz.h + 1);
-      ctx.stroke();
-
-      ctx.restore();
-    }
-
-    function drawTempleDoor3D(d, type, isOccupied) {
-      const primary = type === "fire" ? "#ff5722" : "#29b6f6";
-      const darkRim = type === "fire" ? "#8c2408" : "#014773";
-      const glowCol = type === "fire" ? "rgba(255, 87, 34, 0.45)" : "rgba(41, 182, 246, 0.45)";
-
-      ctx.save();
-      // 3D Taş Kemer Gövdesi
-      ctx.fillStyle = "#2b2433";
-      ctx.beginPath();
-      ctx.roundRect(d.x - 6, d.y - 6, d.w + 12, d.h + 6, [20, 20, 2, 2]);
-      ctx.fill();
-
-      ctx.fillStyle = "#483e54";
-      ctx.beginPath();
-      ctx.roundRect(d.x - 4, d.y - 4, d.w + 8, d.h + 4, [18, 18, 2, 2]);
-      ctx.fill();
-
-      ctx.strokeStyle = isOccupied ? "#fff" : primary;
-      ctx.lineWidth = isOccupied ? 2.8 : 2;
-      ctx.stroke();
-
-      // İç derinlik boşluğu
-      const innerGrad = ctx.createLinearGradient(d.x, d.y, d.x, d.y + d.h);
-      if (isOccupied) {
-        innerGrad.addColorStop(0, primary);
-        innerGrad.addColorStop(1, darkRim);
-      } else {
-        innerGrad.addColorStop(0, "#0d0a12");
-        innerGrad.addColorStop(1, "#1c1626");
-      }
-      ctx.fillStyle = innerGrad;
-      ctx.beginPath();
-      ctx.roundRect(d.x + 2, d.y + 2, d.w - 4, d.h - 2, [14, 14, 0, 0]);
-      ctx.fill();
-
-      // Element Rünü
-      const cx = d.x + d.w / 2;
-      const cy = d.y + 27;
-      ctx.shadowColor = primary;
-      ctx.shadowBlur = isOccupied ? 16 : 7;
-      ctx.fillStyle = isOccupied ? "#fff" : primary;
-      ctx.beginPath();
-      if (type === "fire") {
-        ctx.moveTo(cx, cy - 11);
-        ctx.quadraticCurveTo(cx + 9, cy - 2, cx + 6, cy + 8);
-        ctx.quadraticCurveTo(cx, cy + 12, cx - 6, cy + 8);
-        ctx.quadraticCurveTo(cx - 9, cy - 2, cx, cy - 11);
-      } else {
-        ctx.moveTo(cx, cy - 10);
-        ctx.quadraticCurveTo(cx + 9, cy + 1, cx, cy + 10);
-        ctx.quadraticCurveTo(cx - 9, cy + 1, cx, cy - 10);
-      }
-      ctx.fill();
-
-      if (isOccupied) {
-        ctx.fillStyle = glowCol;
-        ctx.beginPath();
-        ctx.arc(cx, cy + 4, 30, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    // 3B YÜZEYLİ KRİSTAL ELMAS
-    function drawGem3D(g, i) {
-      const bob = Math.sin(animTick * 1.4 + i * 1.3) * 3.5;
-      const gx = g.x;
-      const gy = g.y + bob;
-      const isFire = g.type === "fire";
-      const dark = isFire ? "#b71c1c" : "#01579b";
-      const mid = isFire ? "#ff5722" : "#039be5";
-      const bright = isFire ? "#ffcc80" : "#b3e5fc";
-
-      ctx.save();
-      ctx.translate(gx, gy);
-
-      // Arka 3D ışık halesi
-      const aura = ctx.createRadialGradient(0, 0, 2, 0, 0, 20);
-      aura.addColorStop(0, isFire ? "rgba(255, 87, 34, 0.5)" : "rgba(41, 182, 246, 0.5)");
-      aura.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = aura;
-      ctx.beginPath();
-      ctx.arc(0, 0, 20, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Sol koyu yüzey
-      ctx.fillStyle = dark;
-      ctx.beginPath();
-      ctx.moveTo(0, -11);
-      ctx.lineTo(-9, -2);
-      ctx.lineTo(0, 11);
-      ctx.closePath();
-      ctx.fill();
-
-      // Sağ orta yüzey
-      ctx.fillStyle = mid;
-      ctx.beginPath();
-      ctx.moveTo(0, -11);
-      ctx.lineTo(9, -2);
-      ctx.lineTo(0, 11);
-      ctx.closePath();
-      ctx.fill();
-
-      // Ön parlak kristal faset
-      ctx.fillStyle = bright;
-      ctx.beginPath();
-      ctx.moveTo(0, -11);
-      ctx.lineTo(4.5, -2);
-      ctx.lineTo(0, 3);
-      ctx.lineTo(-4.5, -2);
-      ctx.closePath();
-      ctx.fill();
-
-      // Parıltı yıldızı
-      const glint = Math.max(0, Math.sin(animTick * 2.5 + i * 2));
-      if (glint > 0.65) {
-        const s = (glint - 0.65) * 15;
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(-s, -4); ctx.lineTo(s, -4);
-        ctx.moveTo(0, -4 - s); ctx.lineTo(0, -4 + s);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    // 3D GÖLGELENDİRMELİ ANİMASYONLU KARAKTERLER
-    function drawCharacter3D(p, v, type) {
-      const isFire = type === "fire";
-      const cx = p.x + PW / 2;
-      const bottomY = p.y + PH;
-      const moving = Math.abs(p.vx) > 0.2 && p.grounded;
-      const walkSin = moving ? Math.sin(v.walkPhase) : 0;
-      const walkCos = moving ? Math.cos(v.walkPhase) : 0;
-      const bodyBob = moving ? Math.abs(walkCos) * -2 : Math.sin(animTick * 1.6 + (isFire ? 0 : 2)) * 0.8;
-      const lean = p.vx * 0.032;
-
-      // Zemine düşen 3D temas gölgesi
-      if (p.grounded) {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-        ctx.beginPath();
-        ctx.ellipse(cx, bottomY + 1, 11 * v.squashX, 3.2, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      // Karakter etrafında 3B hacimsel element ışığı
-      const lightGrad = ctx.createRadialGradient(cx, p.y + 14, 4, cx, p.y + 14, 46);
-      lightGrad.addColorStop(0, isFire ? "rgba(255, 112, 67, 0.34)" : "rgba(41, 182, 246, 0.34)");
-      lightGrad.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = lightGrad;
-      ctx.beginPath();
-      ctx.arc(cx, p.y + 14, 46, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.save();
-      ctx.translate(cx, bottomY);
-      ctx.scale(v.squashX, v.squashY);
-      ctx.rotate(lean);
-
-      const darkCol = isFire ? "#b71c1c" : "#01579b";
-      const bodyCol = isFire ? "#ff5722" : "#039be5";
-      const brightCol = isFire ? "#ffd54f" : "#b3e5fc";
-
-      // Bacaklar
-      const legSwing = moving ? walkSin * 5.8 : (!p.grounded ? (p.vy < 0 ? 3.2 : -2) : 0);
-      const leftLift = moving ? Math.max(0, -walkCos * 3.8) : 0;
-      const rightLift = moving ? Math.max(0, walkCos * 3.8) : 0;
-
-      ctx.lineCap = "round";
-      ctx.lineWidth = 4.6;
-
-      ctx.strokeStyle = darkCol;
-      ctx.beginPath();
-      ctx.moveTo(-3, -11 + bodyBob);
-      ctx.lineTo(-3 - legSwing, -2 - leftLift);
-      ctx.stroke();
-
-      ctx.strokeStyle = bodyCol;
-      ctx.beginPath();
-      ctx.moveTo(3, -11 + bodyBob);
-      ctx.lineTo(3 + legSwing, -2 - rightLift);
-      ctx.stroke();
-
-      // 3B Küresel Gölgeli Gövde
-      const torsoGrad = ctx.createRadialGradient(-3, -18 + bodyBob, 2, 0, -15 + bodyBob, 12);
-      torsoGrad.addColorStop(0, brightCol);
-      torsoGrad.addColorStop(0.45, bodyCol);
-      torsoGrad.addColorStop(1, darkCol);
-      ctx.fillStyle = torsoGrad;
-      ctx.beginPath();
-      ctx.roundRect(-8, -22 + bodyBob, 16, 13, 6);
-      ctx.fill();
-
-      // Kollar
-      ctx.strokeStyle = bodyCol;
-      ctx.lineWidth = 3.2;
-      const armSwing = moving ? -walkSin * 4.5 : 0;
-      ctx.beginPath();
-      ctx.moveTo(-7, -18 + bodyBob);
-      ctx.lineTo(-10 + armSwing, -12 + bodyBob);
-      ctx.moveTo(7, -18 + bodyBob);
-      ctx.lineTo(10 - armSwing, -12 + bodyBob);
-      ctx.stroke();
-
-      // Saç (Alev / Su Dalgası)
-      const headY = -24 + bodyBob;
-      const trail = Math.max(-7, Math.min(7, v.trailX));
-
-      if (isFire) {
-        const f1 = Math.sin(animTick * 5.5) * 2.5;
-        const f2 = Math.cos(animTick * 7) * 2;
-        ctx.fillStyle = "#e64a19";
-        ctx.beginPath();
-        ctx.moveTo(-9, headY + 2);
-        ctx.quadraticCurveTo(-11 + trail * 0.4, headY - 8, -4 + trail * 0.6, headY - 15 + f1);
-        ctx.lineTo(-1 + trail * 0.3, headY - 9);
-        ctx.quadraticCurveTo(2 + trail * 0.8, headY - 19 + f2, 4 + trail * 0.6, headY - 11);
-        ctx.quadraticCurveTo(10 + trail * 0.5, headY - 14 - f1, 9, headY + 2);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = brightCol;
-        ctx.beginPath();
-        ctx.moveTo(-5, headY);
-        ctx.quadraticCurveTo(trail * 0.5, headY - 13 + f2, 5, headY);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        const wave = Math.sin(animTick * 4) * 2.2;
-        ctx.fillStyle = "#0277bd";
-        ctx.beginPath();
-        ctx.moveTo(-9, headY + 2);
-        ctx.quadraticCurveTo(-9, headY - 9, 0 + trail * 0.6, headY - 16 + wave * 0.5);
-        ctx.quadraticCurveTo(9, headY - 9, 9, headY + 2);
-        ctx.closePath();
-        ctx.fill();
-
-        const tailDir = -p.dir;
-        ctx.fillStyle = brightCol;
-        ctx.beginPath();
-        ctx.moveTo(tailDir * 4, headY - 4);
-        ctx.quadraticCurveTo(
-          tailDir * 12 + trail * 0.7,
-          headY - 7 + wave,
-          tailDir * 14 + trail,
-          headY + 1 + wave
+      // Element parçacıkları
+      if (Math.random() < (moving ? 0.35 : 0.14)) {
+        spawnP3D(
+          rig.group.position.x + (Math.random() - 0.5) * 0.9,
+          rig.group.position.y + 2.4 + Math.random() * 1.1,
+          (Math.random() - 0.5) * 0.8,
+          (Math.random() - 0.5) * 0.04,
+          isFire ? 0.06 + Math.random() * 0.06 : -0.02 + Math.random() * 0.04,
+          (Math.random() - 0.5) * 0.04,
+          isFire ? (Math.random() < 0.5 ? 0xffd54f : 0xff5722) : 0x80d8ff,
+          20, 0.75, 0
         );
-        ctx.quadraticCurveTo(tailDir * 8, headY + 2, tailDir * 3, headY);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      // 3B Küresel Gölgeli Kafa
-      const headGrad = ctx.createRadialGradient(-2.5, headY - 3, 1.5, 0, headY, 10);
-      headGrad.addColorStop(0, brightCol);
-      headGrad.addColorStop(0.5, bodyCol);
-      headGrad.addColorStop(1, darkCol);
-      ctx.fillStyle = headGrad;
-      ctx.beginPath();
-      ctx.arc(0, headY, 8.8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Gözler
-      const eyeShift = p.dir * 2.6;
-      const isBlinking = v.blink > 4.35;
-
-      if (isBlinking) {
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        ctx.moveTo(-4 + eyeShift, headY); ctx.lineTo(-1 + eyeShift, headY);
-        ctx.moveTo(2 + eyeShift, headY); ctx.lineTo(5 + eyeShift, headY);
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.ellipse(-2.8 + eyeShift, headY, 2.5, 3.1, 0, 0, Math.PI * 2);
-        ctx.ellipse(3.2 + eyeShift, headY, 2.5, 3.1, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#121018";
-        ctx.beginPath();
-        ctx.arc(-2.3 + eyeShift * 1.2, headY, 1.3, 0, Math.PI * 2);
-        ctx.arc(3.7 + eyeShift * 1.2, headY, 1.3, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      ctx.restore();
-    }
-
-    function drawParticles() {
-      for (const p of particles) {
-        const alpha = Math.max(0, p.life / p.maxLife);
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        if (p.glow) {
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 7;
-        }
-        if (p.kind === "ring") {
-          ctx.strokeStyle = p.color;
-          ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * (1.2 - alpha * 0.4), 0, Math.PI * 2);
-          ctx.stroke();
-        } else {
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
       }
     }
 
-    function draw() {
-      animTick += 0.08;
-      const lvl = LEVELS[state.levelIdx];
-
-      ctx.drawImage(bgCanvas, 0, 0);
-      lvl.torches.forEach((t, idx) => drawTorch(t, idx));
-
-      const fHit = { x: state.fire.x + 3, y: state.fire.y + 4, w: PW - 6, h: PH - 4 };
-      const wHit = { x: state.water.x + 3, y: state.water.y + 4, w: PW - 6, h: PH - 4 };
-      drawTempleDoor3D(lvl.doors.fire, "fire", rectsOverlap(fHit, lvl.doors.fire));
-      drawTempleDoor3D(lvl.doors.water, "water", rectsOverlap(wHit, lvl.doors.water));
-
-      // Önce taş duvarlar çizilir, ardından çukur havuzlar taşın içine oyulmuş gibi üstüne oturur
-      for (const w of lvl.walls) drawStoneWall3D(w);
-      for (const hz of lvl.hazards) drawPitHazard(hz);
-
-      // 3D Mekanik Kapılar ve Enerji Köprüleri
-      for (const g of lvl.gates) {
-        const active = !!(state.activeIds && state.activeIds[g.id]);
-        ctx.save();
-        if (g.kind === "gate") {
-          if (!active) {
-            const gGrad = ctx.createLinearGradient(g.x, g.y, g.x + g.w, g.y);
-            gGrad.addColorStop(0, "#5c506b");
-            gGrad.addColorStop(0.5, "#3a3145");
-            gGrad.addColorStop(1, "#221c29");
-            ctx.fillStyle = gGrad;
-            ctx.fillRect(g.x, g.y, g.w, g.h);
-            ctx.strokeStyle = g.color;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(g.x + 1, g.y + 1, g.w - 2, g.h - 2);
-            ctx.fillStyle = g.color;
-            ctx.shadowColor = g.color;
-            ctx.shadowBlur = 9;
-            ctx.fillRect(g.x + g.w / 2 - 2, g.y + 8, 4, g.h - 16);
-          } else {
-            ctx.strokeStyle = g.color;
-            ctx.globalAlpha = 0.25;
-            ctx.setLineDash([4, 4]);
-            ctx.strokeRect(g.x, g.y, g.w, g.h);
-            ctx.setLineDash([]);
-          }
-        } else if (g.kind === "bridge") {
-          if (active) {
-            ctx.shadowColor = g.color;
-            ctx.shadowBlur = 12;
-            ctx.fillStyle = g.color;
-            ctx.beginPath();
-            ctx.roundRect(g.x, g.y, g.w, g.h, 5);
-            ctx.fill();
-            ctx.fillStyle = "rgba(255,255,255,0.55)";
-            ctx.fillRect(g.x + 4, g.y + 2, g.w - 8, 3);
-          } else {
-            ctx.strokeStyle = g.color;
-            ctx.globalAlpha = 0.35;
-            ctx.setLineDash([5, 5]);
-            ctx.strokeRect(g.x, g.y, g.w, g.h);
-            ctx.setLineDash([]);
-          }
-        }
-        ctx.restore();
-      }
-
-      // 3D Zemin Butonları
-      for (const b of lvl.buttons) {
-        const pressed = !!(state.activeIds && state.activeIds[b.targetId]);
-        ctx.fillStyle = "#241f2b";
-        ctx.fillRect(b.x - 4, b.y + 4, b.w + 8, 4);
-
-        ctx.save();
-        ctx.fillStyle = b.color;
-        if (pressed) {
-          ctx.shadowColor = b.color;
-          ctx.shadowBlur = 12;
-        }
-        const offset = pressed ? 4 : 0;
-        ctx.beginPath();
-        ctx.roundRect(b.x, b.y + offset, b.w, b.h - offset, [4, 4, 0, 0]);
-        ctx.fill();
-        ctx.fillStyle = "rgba(255,255,255,0.4)";
-        ctx.fillRect(b.x + 3, b.y + offset + 1, b.w - 6, 2);
-        ctx.restore();
-      }
-
-      lvl.gems.forEach((g, i) => {
-        if (!(state.gemsCollected && state.gemsCollected[i])) drawGem3D(g, i);
-      });
-
-      drawCharacter3D(state.fire, visualState.fire, "fire");
-      drawCharacter3D(state.water, visualState.water, "water");
-      drawParticles();
-    }
-
-    // =========================================================================
-    // 10. ANA OYUN DÖNGÜSÜ
-    // =========================================================================
     function loop(now) {
       const dtMs = now - lastTime;
       lastTime = now;
       const dt = Math.min(dtMs / 16.667, 2);
+      tick += 0.05 * dt;
 
-      if (mode === "host" || mode === "solo") {
-        stepSimulation(dt);
-        syncTimer += dtMs;
-        if (mode === "host" && roomRef && gameStarted && syncTimer >= 45) {
-          syncTimer = 0;
-          roomRef.child("state").set(state);
+      if (appScreen === "game") {
+        if (mode === "host" || mode === "solo") {
+          stepPhysics(dt);
+          smoothPos.fire = { x: state.fire.x, y: state.fire.y };
+          smoothPos.water = { x: state.water.x, y: state.water.y };
+          syncTimer += dtMs;
+          if (mode === "host" && roomRef && gameStarted && syncTimer >= 42) {
+            syncTimer = 0;
+            roomRef.child("state").set(state);
+          }
+        } else {
+          // Misafir pürüzsüz 60 FPS interpolasyon
+          smoothPos.fire.x += (state.fire.x - smoothPos.fire.x) * 0.38;
+          smoothPos.fire.y += (state.fire.y - smoothPos.fire.y) * 0.38;
+          smoothPos.water.x += (state.water.x - smoothPos.water.x) * 0.38;
+          smoothPos.water.y += (state.water.y - smoothPos.water.y) * 0.38;
+        }
+
+        // Dinamik 3D Kamera (Hafif 3 boyutlu paralaks açısı + tam harita görünümü)
+        const aspect = window.innerWidth / window.innerHeight;
+        const baseZ = aspect < 1.3 ? 105 : 73;
+        const midX = toX((smoothPos.fire.x + smoothPos.water.x) / 2);
+        const midY = toY((smoothPos.fire.y + smoothPos.water.y) / 2);
+        camera.position.x += (midX * 0.14 - camera.position.x) * 0.06;
+        camera.position.y += (midY * 0.12 + 1.8 - camera.position.y) * 0.06;
+        camera.position.z += (baseZ - camera.position.z) * 0.08;
+        camera.lookAt(midX * 0.05, midY * 0.04, 0);
+      } else {
+        // CANLI 3D ANA MENÜ KAMERASI (Tapınağın içinde sinematik gezinme)
+        smoothPos.fire = { x: 205, y: 386 };
+        smoothPos.water = { x: 468, y: 386 };
+        state.fire.vx = 0; state.fire.grounded = true; state.fire.dir = 1;
+        state.water.vx = 0; state.water.grounded = true; state.water.dir = -1;
+        camera.position.set(Math.sin(tick * 0.25) * 14, -7.5 + Math.cos(tick * 0.2) * 1.6, 36);
+        camera.lookAt(0, -14.5, 0);
+      }
+
+      // 3D Karakterleri Güncelle
+      animateCharacterRig(fireRig, state.fire, smoothPos.fire, pExtra.fire, dt, true);
+      animateCharacterRig(waterRig, state.water, smoothPos.water, pExtra.water, dt, false);
+
+      // 3D Dalgalı Çukur Sıvıları ve Kabarcıkları
+      for (const l of dynLiquids) {
+        const posAttr = l.surfGeo.attributes.position;
+        for (let i = 0; i < posAttr.count; i++) {
+          const vx = posAttr.getX(i), vy = posAttr.getY(i);
+          posAttr.setZ(i, Math.sin(tick * 3.2 + vx * 1.4 + vy) * 0.12);
+        }
+        posAttr.needsUpdate = true;
+        l.pitLight.intensity = 1.2 + Math.sin(tick * 4 + l.cx) * 0.25;
+
+        if (Math.random() < 0.14) {
+          const col = l.hz.type === "lava" ? 0xffab40 : (l.hz.type === "water" ? 0xb3e5fc : 0xb2ff59);
+          spawnP3D(
+            l.cx + (Math.random() - 0.5) * (l.hz.w / S - 0.6),
+            l.topY - 0.3,
+            (Math.random() - 0.5) * 3.0,
+            (Math.random() - 0.5) * 0.03,
+            0.06 + Math.random() * 0.08,
+            (Math.random() - 0.5) * 0.03,
+            col, 24, 0.72, -0.001
+          );
         }
       }
 
-      spawnAmbientParticles(LEVELS[state.levelIdx]);
-      updateVisualAnimations(dt);
-      updateParticles(dt);
-      draw();
+      // Meşaleler
+      dynTorches.forEach((t, i) => {
+        const f = 1 + Math.sin(tick * 7 + i * 2) * 0.2;
+        t.flame.scale.set(1, f, 1);
+        t.tLight.intensity = 1.3 + Math.sin(tick * 8 + i) * 0.28;
+        if (Math.random() < 0.1) {
+          spawnP3D(t.x, t.y, t.z, (Math.random() - 0.5) * 0.03, 0.07, 0, 0xffca28, 22, 0.55, 0);
+        }
+      });
+
+      // Kapılar, Butonlar ve Elmaslar
+      for (const g of dynGates) {
+        const on = !!(state.activeIds && state.activeIds[g.data.id]);
+        if (g.data.kind === "gate") {
+          g.mesh.visible = !on;
+        } else {
+          g.mesh.material.opacity = on ? 0.95 : 0.14;
+        }
+      }
+
+      for (const b of dynButtons) {
+        const on = !!(state.activeIds && state.activeIds[b.data.targetId]);
+        b.cap.position.y = on ? b.restY - 0.32 : b.restY;
+        b.cap.material.emissiveIntensity = on ? 1.2 : 0.4;
+      }
+
+      for (const gm of dynGems) {
+        const collected = !!(state.gemsCollected && state.gemsCollected[gm.idx]);
+        gm.mesh.visible = !collected;
+        if (!collected) {
+          gm.mesh.rotation.y += 0.045 * dt;
+          gm.mesh.position.y = gm.baseY + Math.sin(tick * 1.8 + gm.idx) * 0.38;
+        }
+      }
+
+      const lvl = CARVED_LEVELS[state.levelIdx];
+      const fAtDoor = overlap({ x: state.fire.x, y: state.fire.y, w: PW, h: PH }, lvl.doors.fire);
+      const wAtDoor = overlap({ x: state.water.x, y: state.water.y, w: PW, h: PH }, lvl.doors.water);
+      if (dynDoors.fire) {
+        dynDoors.fire.portal.material.emissiveIntensity = fAtDoor ? 1.3 : 0.25;
+        dynDoors.fire.ring.rotation.z += 0.03 * dt;
+      }
+      if (dynDoors.water) {
+        dynDoors.water.portal.material.emissiveIntensity = wAtDoor ? 1.3 : 0.25;
+        dynDoors.water.ring.rotation.z -= 0.03 * dt;
+      }
+
+      // 3D Parçacıkları Güncelle
+      for (let i = particles3D.length - 1; i >= 0; i--) {
+        const p = particles3D[i];
+        p.mesh.position.x += p.vx * dt;
+        p.mesh.position.y += p.vy * dt;
+        p.mesh.position.z += p.vz * dt;
+        p.vy += p.grav * dt;
+        p.life -= dt;
+        const ratio = Math.max(0, p.life / p.maxLife);
+        p.mesh.material.opacity = ratio;
+        p.mesh.scale.setScalar(p.scale * ratio);
+        if (p.life <= 0) {
+          scene.remove(p.mesh);
+          particles3D.splice(i, 1);
+        }
+      }
+
+      renderer.render(scene, camera);
       requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
+
+    // URL'de ?oda=1234 varsa doğrudan odaya katıl
+    const inviteCode = new URLSearchParams(location.search).get("oda");
+    if (inviteCode && inviteCode.length === 4) {
+      setTimeout(() => joinRoom(inviteCode), 400);
     }
   </script>
 </body>
