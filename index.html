@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Ateş & Su - Tapınak Online</title>
-  <!-- Firebase SDK (CDN - npm gerektirmez) -->
+  <title>Ateş & Su - 3D Tapınak Online</title>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <style>
@@ -22,12 +21,12 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #0d0b12;
+      background: #09080d;
       color: #f4f1ea;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* --- TAPINAK LOBİSİ --- */
+    /* --- 3D ATMOSFERLİ TAPINAK LOBİSİ --- */
     #lobby {
       position: fixed;
       inset: 0;
@@ -35,14 +34,19 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 18px;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(255, 87, 34, 0.18), transparent 45%),
-        radial-gradient(circle at 80% 25%, rgba(41, 182, 246, 0.18), transparent 45%),
-        radial-gradient(circle at center, #231c2c 0%, #0d0b12 85%);
+      padding: 16px;
       z-index: 20;
       gap: 14px;
       overflow-y: auto;
+    }
+
+    #lobbyBgCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
     }
 
     .brand-header {
@@ -53,45 +57,69 @@
       gap: 4px;
     }
 
-    .brand-sub {
+    .brand-pill {
       font-size: 11px;
-      letter-spacing: 3px;
+      letter-spacing: 2.5px;
       text-transform: uppercase;
-      color: #b0a4bd;
-      font-weight: 700;
+      color: #ffd54f;
+      background: rgba(255, 213, 79, 0.12);
+      border: 1px solid rgba(255, 213, 79, 0.3);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
     }
 
     .title {
-      font-size: clamp(32px, 7vw, 48px);
+      font-size: clamp(34px, 7.5vw, 52px);
       font-weight: 900;
-      letter-spacing: 1.5px;
+      letter-spacing: 2px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      text-shadow: 0 6px 18px rgba(0, 0, 0, 0.85);
     }
-    .title .fire { color: #ff6d2e; text-shadow: 0 0 24px rgba(255, 87, 34, 0.7); }
-    .title .amp { color: #ffd54f; font-size: 0.75em; }
-    .title .water { color: #38c6ff; text-shadow: 0 0 24px rgba(41, 182, 246, 0.7); }
+    .title .fire {
+      background: linear-gradient(180deg, #ffd54f 0%, #ff7043 45%, #d84315 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 18px rgba(255, 87, 34, 0.55));
+    }
+    .title .amp {
+      color: #e0d6eb;
+      font-size: 0.65em;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+    }
+    .title .water {
+      background: linear-gradient(180deg, #e1f5fe 0%, #4fc3f7 45%, #0277bd 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 18px rgba(41, 182, 246, 0.55));
+    }
 
     .panel {
       width: 100%;
       max-width: 410px;
-      background: linear-gradient(180deg, rgba(42, 35, 52, 0.85), rgba(22, 18, 29, 0.92));
-      border: 1px solid rgba(255, 213, 79, 0.22);
-      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(35, 29, 46, 0.84), rgba(16, 13, 23, 0.92));
+      border: 1px solid rgba(255, 213, 79, 0.28);
+      border-radius: 22px;
       padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
+      box-shadow:
+        0 22px 50px rgba(0, 0, 0, 0.78),
+        0 2px 0 rgba(255, 213, 79, 0.15) inset,
+        0 -3px 0 rgba(0, 0, 0, 0.6) inset;
+      backdrop-filter: blur(12px);
     }
 
+    /* 3D Kabartmalı Butonlar */
     .btn {
       width: 100%;
       padding: 14px 16px;
       border: none;
-      border-radius: 13px;
+      border-radius: 14px;
       font-size: 15px;
       font-weight: 800;
       color: #fff;
@@ -100,28 +128,51 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      transition: transform 0.12s, filter 0.15s, opacity 0.2s;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+      position: relative;
+      transition: transform 0.1s, filter 0.15s, opacity 0.2s;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     }
-    .btn:active:not(:disabled) { transform: scale(0.97); }
+    .btn:active:not(:disabled) { transform: translateY(2px) scale(0.985); }
     .btn:disabled {
       opacity: 0.42;
       cursor: not-allowed;
-      filter: grayscale(0.4);
+      filter: grayscale(0.45);
     }
 
     .btn-match {
-      background: linear-gradient(135deg, #ff7043 0%, #9c27b0 50%, #29b6f6 100%);
+      background: linear-gradient(135deg, #ff6d2e 0%, #8e24aa 50%, #039be5 100%);
+      box-shadow: 0 5px 0 #311042, 0 10px 22px rgba(142, 36, 170, 0.4);
       font-size: 16px;
       padding: 15px;
     }
-    .btn-fire { background: linear-gradient(135deg, #ff5722, #c62828); }
-    .btn-water { background: linear-gradient(135deg, #0288d1, #00acc1); }
-    .btn-ready-off { background: linear-gradient(135deg, #37474f, #263238); border: 1px solid rgba(255,255,255,0.2); }
-    .btn-ready-on { background: linear-gradient(135deg, #2e7d32, #00c853); box-shadow: 0 0 18px rgba(0, 200, 83, 0.45); }
-    .btn-start { background: linear-gradient(135deg, #ffa000, #ff6f00); color: #16111c; font-size: 16px; }
+    .btn-fire {
+      background: linear-gradient(180deg, #ff7043, #d84315);
+      box-shadow: 0 4px 0 #7f1d06, 0 8px 18px rgba(216, 67, 21, 0.35);
+    }
+    .btn-water {
+      background: linear-gradient(180deg, #29b6f6, #0277bd);
+      box-shadow: 0 4px 0 #013d63, 0 8px 18px rgba(2, 119, 189, 0.35);
+    }
+    .btn-ready-off {
+      background: linear-gradient(180deg, #455a64, #263238);
+      box-shadow: 0 4px 0 #141b1f;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .btn-ready-on {
+      background: linear-gradient(180deg, #00e676, #00a152);
+      box-shadow: 0 4px 0 #005229, 0 0 22px rgba(0, 230, 118, 0.45);
+      color: #071f11;
+      text-shadow: none;
+    }
+    .btn-start {
+      background: linear-gradient(180deg, #ffd54f, #ff8f00);
+      box-shadow: 0 4px 0 #8c4b00, 0 8px 20px rgba(255, 143, 0, 0.4);
+      color: #1a1205;
+      text-shadow: none;
+      font-size: 16px;
+    }
     .btn-ghost {
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.07);
       border: 1px solid rgba(255, 255, 255, 0.14);
       font-size: 13px;
       padding: 10px;
@@ -132,15 +183,16 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      color: #8f829c;
-      font-size: 12px;
-      font-weight: 700;
+      color: #9e90ad;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
     }
     .divider::before, .divider::after {
       content: "";
       flex: 1;
       height: 1px;
-      background: rgba(255, 255, 255, 0.12);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     }
 
     .join-row { display: flex; gap: 8px; }
@@ -148,15 +200,16 @@
     .code-input {
       flex: 1;
       padding: 12px;
-      border-radius: 13px;
-      border: 1px solid rgba(255, 255, 255, 0.22);
-      background: rgba(0, 0, 0, 0.42);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 213, 79, 0.28);
+      background: rgba(0, 0, 0, 0.48);
       color: #ffd54f;
       font-size: 20px;
       font-weight: 900;
       text-align: center;
       letter-spacing: 6px;
       outline: none;
+      box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.65);
       touch-action: manipulation;
       user-select: text;
       -webkit-user-select: text;
@@ -167,17 +220,19 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(0, 0, 0, 0.35);
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.42);
+      padding: 11px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 213, 79, 0.2);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
     }
-    .room-tag { font-size: 12px; color: #b0a4bd; font-weight: 700; }
+    .room-tag { font-size: 12px; color: #ffd54f; font-weight: 800; }
     .room-code-pill {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 900;
       letter-spacing: 4px;
-      color: #ffd54f;
+      color: #fff;
+      text-shadow: 0 0 12px rgba(255, 213, 79, 0.6);
       user-select: text;
       -webkit-user-select: text;
     }
@@ -189,8 +244,8 @@
     }
 
     .player-slot {
-      background: rgba(0, 0, 0, 0.35);
-      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.45));
+      border-radius: 16px;
       padding: 14px 10px;
       display: flex;
       flex-direction: column;
@@ -198,22 +253,29 @@
       gap: 6px;
       border: 2px solid rgba(255, 255, 255, 0.08);
       text-align: center;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
     }
-    .player-slot.fire-active { border-color: rgba(255, 87, 34, 0.65); background: rgba(255, 87, 34, 0.09); }
-    .player-slot.water-active { border-color: rgba(41, 182, 246, 0.65); background: rgba(41, 182, 246, 0.09); }
+    .player-slot.fire-active {
+      border-color: rgba(255, 112, 67, 0.75);
+      background: linear-gradient(180deg, rgba(255, 87, 34, 0.16), rgba(0, 0, 0, 0.45));
+    }
+    .player-slot.water-active {
+      border-color: rgba(79, 195, 247, 0.75);
+      background: linear-gradient(180deg, rgba(41, 182, 246, 0.16), rgba(0, 0, 0, 0.45));
+    }
 
-    .slot-icon { font-size: 28px; }
+    .slot-icon { font-size: 30px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6)); }
     .slot-role { font-size: 14px; font-weight: 800; }
     .slot-status {
       font-size: 11px;
       font-weight: 800;
-      padding: 3px 9px;
+      padding: 4px 10px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.1);
       color: #ccc;
     }
-    .slot-status.ready { background: rgba(0, 200, 83, 0.25); color: #69f0ae; }
-    .slot-status.host { background: rgba(255, 171, 64, 0.25); color: #ffd54f; }
+    .slot-status.ready { background: rgba(0, 230, 118, 0.24); color: #69f0ae; }
+    .slot-status.host { background: rgba(255, 213, 79, 0.22); color: #ffd54f; }
 
     #statusBox {
       text-align: center;
@@ -222,6 +284,7 @@
       min-height: 18px;
       line-height: 1.4;
       max-width: 410px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
     }
 
     .pulse-dot {
@@ -245,7 +308,7 @@
       height: 100dvh;
       flex-direction: column;
       justify-content: space-between;
-      background: #0d0b12;
+      background: #09080d;
     }
 
     #hud {
@@ -253,7 +316,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 6px 12px;
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0, 0, 0, 0.72);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       font-size: 13px;
       font-weight: 700;
@@ -264,7 +327,7 @@
     .hud-left, .hud-right { display: flex; align-items: center; gap: 8px; }
 
     .badge {
-      padding: 4px 9px;
+      padding: 4px 10px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.12);
       white-space: nowrap;
@@ -293,14 +356,14 @@
       padding: 4px;
     }
 
-    canvas {
+    canvas#game {
       max-width: 100%;
       max-height: 100%;
       aspect-ratio: 16 / 9;
-      background: #17141d;
-      border-radius: 10px;
-      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.75);
-      border: 2px solid #3c3345;
+      background: #14111a;
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85);
+      border: 2px solid #443952;
     }
 
     #toast {
@@ -308,8 +371,8 @@
       top: 14px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 12, 20, 0.9);
-      border: 1px solid rgba(255, 213, 79, 0.4);
+      background: rgba(15, 12, 20, 0.92);
+      border: 1px solid rgba(255, 213, 79, 0.45);
       padding: 8px 16px;
       border-radius: 999px;
       font-size: 14px;
@@ -318,6 +381,7 @@
       pointer-events: none;
       transition: opacity 0.25s;
       white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
     }
     #toast.show { opacity: 1; }
 
@@ -339,14 +403,14 @@
       height: 66px;
       border-radius: 50%;
       border: 2px solid rgba(255, 255, 255, 0.25);
-      background: rgba(255, 255, 255, 0.12);
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.08));
       color: #fff;
       font-size: 24px;
       font-weight: 900;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.45);
     }
     .ctrl-btn.pressed {
       background: rgba(255, 255, 255, 0.38);
@@ -356,8 +420,8 @@
     .ctrl-jump {
       width: 74px;
       height: 74px;
-      background: rgba(255, 171, 64, 0.22);
-      border-color: rgba(255, 171, 64, 0.6);
+      background: radial-gradient(circle at 35% 30%, rgba(255, 193, 7, 0.35), rgba(255, 111, 0, 0.16));
+      border-color: rgba(255, 213, 79, 0.65);
     }
 
     .ctrl-switch {
@@ -365,8 +429,8 @@
       width: 58px;
       height: 58px;
       font-size: 20px;
-      background: rgba(156, 39, 176, 0.3);
-      border-color: rgba(206, 147, 216, 0.6);
+      background: rgba(156, 39, 176, 0.32);
+      border-color: rgba(206, 147, 216, 0.65);
     }
 
     @media (max-height: 460px) and (orientation: landscape) {
@@ -383,7 +447,7 @@
         pointer-events: auto;
         width: 58px;
         height: 58px;
-        background: rgba(20, 18, 24, 0.55);
+        background: rgba(20, 18, 24, 0.6);
       }
       .ctrl-jump { width: 64px; height: 64px; }
     }
@@ -393,8 +457,10 @@
 
   <!-- LOBİ VE BEKLEME ODASI -->
   <div id="lobby">
+    <canvas id="lobbyBgCanvas"></canvas>
+
     <div class="brand-header">
-      <div class="brand-sub">Tapınak Macerası • Online</div>
+      <div class="brand-pill">✨ 3D TAPINAK MACERASI • ONLINE</div>
       <div class="title">
         <span class="fire">ATEŞ</span>
         <span class="amp">&</span>
@@ -423,7 +489,7 @@
       <div class="room-header">
         <div>
           <div class="room-tag" id="roomTypeLabel">ÖZEL ODA</div>
-          <div style="font-size:12px; color:#8f829c;">Kodu arkadaşınla paylaş</div>
+          <div style="font-size:12px; color:#9e90ad;">Kodu arkadaşınla paylaş</div>
         </div>
         <div class="room-code-pill" id="roomCodeDisplay">----</div>
       </div>
@@ -442,12 +508,10 @@
         </div>
       </div>
 
-      <!-- Kurucu için Başlat Butonu -->
       <button class="btn btn-start" id="btnStartGame" style="display:none;" disabled>
         ⏳ Su Oyuncusu Bekleniyor...
       </button>
 
-      <!-- Misafir için Hazır Butonu -->
       <button class="btn btn-ready-off" id="btnToggleReady" style="display:none;">
         ✋ Hazır Ver
       </button>
@@ -491,7 +555,7 @@
 
   <script>
     // =========================================================================
-    // 1. FIREBASE YAPILANDIRMASI (Senin projenle hazır bağlı)
+    // 1. FIREBASE YAPILANDIRMASI
     // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyCV8vsi4zIZbMQyBqyrbnu6liJkyTk_rcI",
@@ -509,9 +573,7 @@
     function initFirebase() {
       if (db) return true;
       try {
-        if (!firebase.apps.length) {
-          firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         db = firebase.database();
         return true;
       } catch (err) {
@@ -521,7 +583,84 @@
     }
 
     // =========================================================================
-    // 2. WEB AUDIO API SES EFEKTLERİ MOTORU
+    // 2. CANLI LOBİ ARKA PLAN SAHNESİ
+    // =========================================================================
+    const lobbyCanvas = document.getElementById("lobbyBgCanvas");
+    const lCtx = lobbyCanvas.getContext("2d");
+    let lobbySparks = [];
+    for (let i = 0; i < 45; i++) {
+      lobbySparks.push({
+        x: Math.random(),
+        y: Math.random(),
+        vy: 0.001 + Math.random() * 0.0025,
+        size: 1.5 + Math.random() * 2.5,
+        side: i % 2 === 0 ? "fire" : "water"
+      });
+    }
+
+    function renderLobbyBackground(t) {
+      if (document.getElementById("lobby").style.display === "none") return;
+      const w = (lobbyCanvas.width = window.innerWidth);
+      const h = (lobbyCanvas.height = window.innerHeight);
+
+      const grad = lCtx.createLinearGradient(0, 0, w, h);
+      grad.addColorStop(0, "#1c1218");
+      grad.addColorStop(0.5, "#13101a");
+      grad.addColorStop(1, "#0e1824");
+      lCtx.fillStyle = grad;
+      lCtx.fillRect(0, 0, w, h);
+
+      // Sol Ateş Halesi & Sağ Su Halesi
+      const fGlow = lCtx.createRadialGradient(w * 0.18, h * 0.35, 10, w * 0.18, h * 0.35, w * 0.42);
+      fGlow.addColorStop(0, "rgba(255, 87, 34, 0.24)");
+      fGlow.addColorStop(1, "rgba(0,0,0,0)");
+      lCtx.fillStyle = fGlow;
+      lCtx.fillRect(0, 0, w, h);
+
+      const wGlow = lCtx.createRadialGradient(w * 0.82, h * 0.35, 10, w * 0.82, h * 0.35, w * 0.42);
+      wGlow.addColorStop(0, "rgba(41, 182, 246, 0.24)");
+      wGlow.addColorStop(1, "rgba(0,0,0,0)");
+      lCtx.fillStyle = wGlow;
+      lCtx.fillRect(0, 0, w, h);
+
+      // 3D Tapınak Zemin Perspektif Izgarası
+      const floorY = h * 0.78;
+      const floorGrad = lCtx.createLinearGradient(0, floorY, 0, h);
+      floorGrad.addColorStop(0, "#241d2e");
+      floorGrad.addColorStop(1, "#0b0910");
+      lCtx.fillStyle = floorGrad;
+      lCtx.fillRect(0, floorY, w, h - floorY);
+
+      lCtx.strokeStyle = "rgba(255, 213, 79, 0.08)";
+      lCtx.lineWidth = 1;
+      for (let i = -6; i <= 6; i++) {
+        lCtx.beginPath();
+        lCtx.moveTo(w / 2 + i * 50, floorY);
+        lCtx.lineTo(w / 2 + i * 140, h);
+        lCtx.stroke();
+      }
+
+      // Uçuşan Element Kıvılcımları
+      for (const s of lobbySparks) {
+        s.y -= s.vy;
+        if (s.y < 0) {
+          s.y = 1;
+          s.x = Math.random();
+        }
+        const sx = s.x * w + Math.sin(t * 0.002 + s.y * 10) * 14;
+        const sy = s.y * h;
+        lCtx.fillStyle = s.side === "fire" ? "rgba(255, 138, 101, 0.65)" : "rgba(129, 212, 250, 0.65)";
+        lCtx.beginPath();
+        lCtx.arc(sx, sy, s.size, 0, Math.PI * 2);
+        lCtx.fill();
+      }
+
+      requestAnimationFrame(renderLobbyBackground);
+    }
+    requestAnimationFrame(renderLobbyBackground);
+
+    // =========================================================================
+    // 3. WEB AUDIO API SES EFEKTLERİ MOTORU
     // =========================================================================
     const SoundFX = {
       ctx: null,
@@ -531,9 +670,7 @@
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
           if (AudioCtx) this.ctx = new AudioCtx();
         }
-        if (this.ctx && this.ctx.state === "suspended") {
-          this.ctx.resume();
-        }
+        if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
       },
       playJump(isFire = true) {
         if (this.muted) return;
@@ -646,17 +783,18 @@
     };
 
     // =========================================================================
-    // 3. SABİTLER VE 3 TAPINAK BÖLÜMÜ
+    // 4. FİZİK SABİTLERİ VE ÇUKUR HAVUZLU 3 BÖLÜM
     // =========================================================================
     const W = 800, H = 450;
-    const GRAVITY = 0.55;
-    const MOVE_SPEED = 3.8;
-    const JUMP_FORCE = -10.8;
+    const GRAVITY = 0.52;
+    const MOVE_SPEED = 4.2;
+    const JUMP_FORCE = -11.4; // Havuzların üzerinden rahatça atlamak için güçlendirildi
     const PW = 24, PH = 34;
 
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
 
+    // Havuzlar platformun üstünde yüzmez; o platformun içine oyulmuş gerçek çukurlardır!
     const LEVELS = [
       {
         name: "1. Tapınak Girişi",
@@ -675,10 +813,11 @@
           { x: 20, y: 255, w: 120, h: 18 },
           { x: 160, y: 200, w: 620, h: 20 }
         ],
+        // Kısaltılmış mesafeler (50-56px) — y: 420 ve y: 310 yüzeylerinin içine gömülü çukurlar
         hazards: [
-          { x: 210, y: 412, w: 85, h: 12, type: "lava" },
-          { x: 400, y: 412, w: 85, h: 12, type: "water" },
-          { x: 370, y: 302, w: 75, h: 12, type: "acid" }
+          { x: 225, y: 420, w: 54, h: 16, type: "lava" },
+          { x: 415, y: 420, w: 54, h: 16, type: "water" },
+          { x: 380, y: 310, w: 50, h: 13, type: "acid" }
         ],
         buttons: [
           { x: 520, y: 302, w: 42, h: 8, targetId: 1, color: "#ffd54f" },
@@ -688,8 +827,8 @@
           { id: 1, x: 230, y: 220, w: 18, h: 90, kind: "gate", color: "#ffd54f" }
         ],
         gems: [
-          { x: 252, y: 376, type: "fire" },
-          { x: 442, y: 376, type: "water" },
+          { x: 252, y: 374, type: "fire" },
+          { x: 442, y: 374, type: "water" },
           { x: 310, y: 274, type: "fire" },
           { x: 470, y: 164, type: "water" }
         ],
@@ -718,9 +857,9 @@
           { x: 570, y: 185, w: 210, h: 20 }
         ],
         hazards: [
-          { x: 170, y: 412, w: 95, h: 12, type: "lava" },
-          { x: 535, y: 412, w: 95, h: 12, type: "water" },
-          { x: 365, y: 247, w: 70, h: 12, type: "acid" }
+          { x: 188, y: 420, w: 56, h: 16, type: "lava" },
+          { x: 554, y: 420, w: 56, h: 16, type: "water" },
+          { x: 376, y: 255, w: 48, h: 13, type: "acid" }
         ],
         buttons: [
           { x: 310, y: 412, w: 42, h: 8, targetId: 1, color: "#ff8a65" },
@@ -731,8 +870,8 @@
           { id: 2, x: 135, y: 368, w: 95, h: 16, kind: "bridge", color: "#4fc3f7" }
         ],
         gems: [
-          { x: 216, y: 376, type: "fire" },
-          { x: 582, y: 376, type: "water" },
+          { x: 216, y: 374, type: "fire" },
+          { x: 582, y: 374, type: "water" },
           { x: 330, y: 220, type: "water" },
           { x: 470, y: 220, type: "fire" }
         ],
@@ -759,12 +898,12 @@
           { x: 160, y: 195, w: 620, h: 20 }
         ],
         hazards: [
-          { x: 220, y: 412, w: 65, h: 12, type: "acid" },
-          { x: 360, y: 412, w: 85, h: 12, type: "lava" },
-          { x: 520, y: 412, w: 85, h: 12, type: "water" },
-          { x: 300, y: 302, w: 95, h: 12, type: "lava" },
-          { x: 280, y: 187, w: 90, h: 12, type: "water" },
-          { x: 450, y: 187, w: 90, h: 12, type: "lava" }
+          { x: 226, y: 420, w: 48, h: 16, type: "acid" },
+          { x: 375, y: 420, w: 54, h: 16, type: "lava" },
+          { x: 535, y: 420, w: 54, h: 16, type: "water" },
+          { x: 320, y: 310, w: 54, h: 13, type: "lava" },
+          { x: 295, y: 195, w: 52, h: 13, type: "water" },
+          { x: 468, y: 195, w: 52, h: 13, type: "lava" }
         ],
         buttons: [
           { x: 640, y: 302, w: 42, h: 8, targetId: 1, color: "#ce93d8" },
@@ -775,10 +914,10 @@
           { id: 1, x: 315, y: 260, w: 72, h: 14, kind: "bridge", color: "#ce93d8" }
         ],
         gems: [
-          { x: 402, y: 376, type: "fire" },
-          { x: 562, y: 376, type: "water" },
-          { x: 325, y: 152, type: "water" },
-          { x: 495, y: 152, type: "fire" }
+          { x: 402, y: 374, type: "fire" },
+          { x: 562, y: 374, type: "water" },
+          { x: 321, y: 152, type: "water" },
+          { x: 494, y: 152, type: "fire" }
         ],
         doors: {
           fire: { x: 635, y: 141, w: 40, h: 54 },
@@ -788,7 +927,7 @@
     ];
 
     // =========================================================================
-    // 4. OYUN VE FIREBASE ODA DURUMU
+    // 5. OYUN VE FIREBASE ODA DURUMU
     // =========================================================================
     let mode = "host";
     let soloControl = "fire";
@@ -840,7 +979,7 @@
     }
 
     // =========================================================================
-    // 5. LOBİ, RASTGELE EŞLEŞTİRME VE HAZIR SİSTEMİ (FIREBASE)
+    // 6. LOBİ, RASTGELE EŞLEŞTİRME VE HAZIR SİSTEMİ
     // =========================================================================
     function switchLobbyScreen(view) {
       document.getElementById("menuView").style.display = view === "menu" ? "flex" : "none";
@@ -1010,9 +1149,7 @@
           if (gameStarted) showToast("Su oyuncusunun bağlantısı kesildi!");
         }
 
-        if (data.guestInput) {
-          remoteInput = data.guestInput;
-        }
+        if (data.guestInput) remoteInput = data.guestInput;
 
         if (gameStarted && data.restartReq && data.restartReq !== lastRestartReq) {
           lastRestartReq = data.restartReq;
@@ -1086,9 +1223,7 @@
             }
           }
 
-          if (nextState.levelIdx !== prevLvl) {
-            showToast(LEVELS[nextState.levelIdx].name);
-          }
+          if (nextState.levelIdx !== prevLvl) showToast(LEVELS[nextState.levelIdx].name);
 
           state = nextState;
           updateHud();
@@ -1099,11 +1234,8 @@
     async function leaveRoom() {
       if (roomRef) {
         roomRef.off();
-        if (mode === "host") {
-          await roomRef.remove();
-        } else if (mode === "guest") {
-          await roomRef.update({ guestOnline: false, guestReady: false });
-        }
+        if (mode === "host") await roomRef.remove();
+        else if (mode === "guest") await roomRef.update({ guestOnline: false, guestReady: false });
         roomRef = null;
       }
       currentRoomCode = null;
@@ -1112,14 +1244,14 @@
       document.getElementById("gameWrapper").style.display = "none";
       document.getElementById("lobby").style.display = "flex";
       switchLobbyScreen("menu");
+      requestAnimationFrame(renderLobbyBackground);
       setStatus("Odadan ayrıldın.");
     }
 
     document.getElementById("btnQuickMatch").addEventListener("click", quickMatchmaking);
     document.getElementById("btnCreatePrivate").addEventListener("click", () => createFirebaseRoom(false));
     document.getElementById("btnJoinCode").addEventListener("click", () => {
-      const code = document.getElementById("inputCode").value.trim();
-      joinFirebaseRoom(code);
+      joinFirebaseRoom(document.getElementById("inputCode").value.trim());
     });
 
     document.getElementById("btnToggleReady").addEventListener("click", async () => {
@@ -1144,11 +1276,7 @@
       SoundFX.playLevelWin();
       gameStarted = true;
       loadLevel(0);
-      await roomRef.update({
-        status: "playing",
-        isPublic: false,
-        state
-      });
+      await roomRef.update({ status: "playing", isPublic: false, state });
       startGameScreen();
     });
 
@@ -1162,9 +1290,9 @@
     });
 
     // =========================================================================
-    // 6. GÖRSEL ANİMASYON VE PARÇACIK MOTORU
+    // 7. GÖRSEL ANİMASYON VE PARÇACIK MOTORU
     // =========================================================================
-    const MAX_PARTICLES = 180;
+    const MAX_PARTICLES = 190;
     let particles = [];
     let animTick = 0;
 
@@ -1181,9 +1309,9 @@
 
     function buildTempleBackground() {
       const bgGrad = bgCtx.createLinearGradient(0, 0, 0, H);
-      bgGrad.addColorStop(0, "#1c1824");
-      bgGrad.addColorStop(0.5, "#15121b");
-      bgGrad.addColorStop(1, "#0f0d14");
+      bgGrad.addColorStop(0, "#1c1726");
+      bgGrad.addColorStop(0.5, "#14111c");
+      bgGrad.addColorStop(1, "#0d0b12");
       bgCtx.fillStyle = bgGrad;
       bgCtx.fillRect(0, 0, W, H);
 
@@ -1193,22 +1321,26 @@
         return (seed - 1) / 2147483646;
       };
 
+      // 3D Derinlikli Taş Tuğla Örgüsü
       const bw = 48, bh = 24;
       for (let row = 0; row < H / bh + 1; row++) {
         const offset = (row % 2) * (bw / 2);
         for (let col = -1; col < W / bw + 1; col++) {
           const x = col * bw + offset;
           const y = row * bh;
-          const shade = Math.floor(24 + rand() * 14);
+          const shade = Math.floor(23 + rand() * 14);
           const warm = Math.floor(rand() * 5);
-          bgCtx.fillStyle = `rgb(${shade + warm}, ${shade - 2}, ${shade + 7})`;
+          bgCtx.fillStyle = `rgb(${shade + warm}, ${shade - 2}, ${shade + 8})`;
           bgCtx.fillRect(x + 1, y + 1, bw - 2, bh - 2);
 
-          bgCtx.fillStyle = "rgba(255,255,255,0.025)";
+          // 3B üst ışık ve alt gölge kenarı
+          bgCtx.fillStyle = "rgba(255,255,255,0.035)";
           bgCtx.fillRect(x + 1, y + 1, bw - 2, 2);
+          bgCtx.fillStyle = "rgba(0,0,0,0.28)";
+          bgCtx.fillRect(x + 1, y + bh - 3, bw - 2, 2);
 
           if (rand() < 0.14) {
-            bgCtx.strokeStyle = "rgba(0,0,0,0.35)";
+            bgCtx.strokeStyle = "rgba(0,0,0,0.38)";
             bgCtx.lineWidth = 1;
             bgCtx.beginPath();
             bgCtx.moveTo(x + 10 + rand() * 20, y + 2);
@@ -1218,34 +1350,37 @@
         }
       }
 
+      // Silindirik 3B Tapınak Sütunları
       const pillarXs = [155, 400, 645];
       for (const px of pillarXs) {
-        const pGrad = bgCtx.createLinearGradient(px - 22, 0, px + 22, 0);
-        pGrad.addColorStop(0, "rgba(0,0,0,0.38)");
-        pGrad.addColorStop(0.45, "rgba(58,50,68,0.22)");
-        pGrad.addColorStop(1, "rgba(0,0,0,0.45)");
+        const pGrad = bgCtx.createLinearGradient(px - 24, 0, px + 24, 0);
+        pGrad.addColorStop(0, "rgba(0,0,0,0.48)");
+        pGrad.addColorStop(0.32, "rgba(74,64,88,0.26)");
+        pGrad.addColorStop(0.7, "rgba(35,30,44,0.25)");
+        pGrad.addColorStop(1, "rgba(0,0,0,0.55)");
         bgCtx.fillStyle = pGrad;
-        bgCtx.fillRect(px - 20, 20, 40, H - 40);
+        bgCtx.fillRect(px - 22, 20, 44, H - 40);
 
-        bgCtx.fillStyle = "rgba(0,0,0,0.25)";
+        bgCtx.fillStyle = "rgba(0,0,0,0.3)";
         for (let py = 40; py < H - 40; py += 45) {
-          bgCtx.fillRect(px - 22, py, 44, 4);
+          bgCtx.fillRect(px - 24, py, 48, 4);
         }
       }
 
+      // Tavan Sarmaşıkları
       const vines = [
         { x: 65, len: 55 }, { x: 180, len: 38 }, { x: 315, len: 48 },
         { x: 510, len: 42 }, { x: 725, len: 58 }
       ];
       for (const v of vines) {
-        bgCtx.strokeStyle = "#223829";
+        bgCtx.strokeStyle = "#203828";
         bgCtx.lineWidth = 2.5;
         bgCtx.beginPath();
         bgCtx.moveTo(v.x, 20);
         bgCtx.quadraticCurveTo(v.x + 8, 20 + v.len * 0.5, v.x - 4, 20 + v.len);
         bgCtx.stroke();
 
-        bgCtx.fillStyle = "#2d4c36";
+        bgCtx.fillStyle = "#2e5239";
         for (let t = 14; t < v.len; t += 14) {
           bgCtx.beginPath();
           bgCtx.ellipse(v.x + (t % 28 === 0 ? 5 : -5), 20 + t, 5, 2.5, 0.4, 0, Math.PI * 2);
@@ -1255,7 +1390,7 @@
 
       const vig = bgCtx.createRadialGradient(W / 2, H / 2, 180, W / 2, H / 2, 520);
       vig.addColorStop(0, "rgba(0,0,0,0)");
-      vig.addColorStop(1, "rgba(0,0,0,0.52)");
+      vig.addColorStop(1, "rgba(0,0,0,0.55)");
       bgCtx.fillStyle = vig;
       bgCtx.fillRect(0, 0, W, H);
     }
@@ -1288,16 +1423,12 @@
         const angle = (Math.PI * 2 * i) / 16 + Math.random() * 0.3;
         const speed = 1.5 + Math.random() * 3.2;
         spawnParticle({
-          x: gem.x,
-          y: gem.y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
+          x: gem.x, y: gem.y,
+          vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
           size: 2.2 + Math.random() * 2.5,
           color: colors[i % colors.length],
           life: 24 + Math.random() * 14,
-          gravity: 0.05,
-          drag: 0.94,
-          glow: true
+          gravity: 0.05, drag: 0.94, glow: true
         });
       }
     }
@@ -1306,15 +1437,12 @@
       const col = type === "fire" ? "#ff9e64" : "#80d8ff";
       for (let i = 0; i < count; i++) {
         spawnParticle({
-          x: x + (Math.random() - 0.5) * 14,
-          y: y - 2,
-          vx: (Math.random() - 0.5) * 2.2,
-          vy: -0.4 - Math.random() * 1.4,
+          x: x + (Math.random() - 0.5) * 14, y: y - 2,
+          vx: (Math.random() - 0.5) * 2.2, vy: -0.4 - Math.random() * 1.4,
           size: 2 + Math.random() * 2.5,
           color: i % 2 === 0 ? "rgba(210,200,220,0.75)" : col,
           life: 16 + Math.random() * 10,
-          gravity: -0.02,
-          drag: 0.93
+          gravity: -0.02, drag: 0.93
         });
       }
     }
@@ -1323,20 +1451,16 @@
       const colors = type === "fire"
         ? ["#cfd8dc", "#ff8a65", "#90a4ae"]
         : ["#e1f5fe", "#b3e5fc", "#ffffff"];
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 22; i++) {
         const a = Math.random() * Math.PI * 2;
         const sp = 1 + Math.random() * 3;
         spawnParticle({
-          x: x + PW / 2,
-          y: y + PH / 2,
-          vx: Math.cos(a) * sp,
-          vy: Math.sin(a) * sp - 1.2,
+          x: x + PW / 2, y: y + PH / 2,
+          vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.2,
           size: 3 + Math.random() * 4,
           color: colors[i % colors.length],
           life: 28 + Math.random() * 16,
-          gravity: -0.04,
-          drag: 0.95,
-          glow: true
+          gravity: -0.04, drag: 0.95, glow: true
         });
       }
     }
@@ -1345,46 +1469,43 @@
       for (const t of lvl.torches) {
         if (Math.random() < 0.22) {
           spawnParticle({
-            x: t.x + (Math.random() - 0.5) * 6,
-            y: t.y - 12,
-            vx: (Math.random() - 0.5) * 0.45,
-            vy: -0.7 - Math.random() * 0.9,
+            x: t.x + (Math.random() - 0.5) * 6, y: t.y - 12,
+            vx: (Math.random() - 0.5) * 0.45, vy: -0.7 - Math.random() * 0.9,
             size: 1.4 + Math.random() * 1.5,
             color: Math.random() < 0.5 ? "#ffca28" : "#ff7043",
             life: 22 + Math.random() * 18,
-            gravity: -0.01,
-            drag: 0.99,
-            glow: true
+            gravity: -0.01, drag: 0.99, glow: true
           });
         }
       }
 
+      // Çukur havuzlardan çıkan gerçekçi kıvılcım / baloncuk / zehir buharı
       for (const hz of lvl.hazards) {
-        if (Math.random() < 0.14) {
-          const px = hz.x + 6 + Math.random() * (hz.w - 12);
+        if (Math.random() < 0.2) {
+          const px = hz.x + 8 + Math.random() * (hz.w - 16);
           if (hz.type === "lava") {
             spawnParticle({
-              x: px, y: hz.y + 1,
-              vx: (Math.random() - 0.5) * 0.5, vy: -0.8 - Math.random() * 1.1,
-              size: 1.6 + Math.random() * 1.8,
-              color: Math.random() < 0.5 ? "#ffab40" : "#ff3d00",
-              life: 20 + Math.random() * 15, gravity: 0.02, glow: true
+              x: px, y: hz.y + 3,
+              vx: (Math.random() - 0.5) * 0.55, vy: -0.9 - Math.random() * 1.2,
+              size: 1.7 + Math.random() * 1.8,
+              color: Math.random() < 0.5 ? "#ffd54f" : "#ff3d00",
+              life: 22 + Math.random() * 15, gravity: 0.025, glow: true
             });
           } else if (hz.type === "water") {
             spawnParticle({
-              x: px, y: hz.y + 2,
-              vx: (Math.random() - 0.5) * 0.3, vy: -0.5 - Math.random() * 0.6,
-              size: 1.6 + Math.random() * 1.6,
+              x: px, y: hz.y + 4,
+              vx: (Math.random() - 0.5) * 0.3, vy: -0.6 - Math.random() * 0.7,
+              size: 1.8 + Math.random() * 1.6,
               color: "#b3e5fc",
               life: 18 + Math.random() * 14, kind: "ring"
             });
           } else {
             spawnParticle({
-              x: px, y: hz.y + 1,
-              vx: (Math.random() - 0.5) * 0.4, vy: -0.6 - Math.random() * 0.8,
-              size: 2.2 + Math.random() * 2,
+              x: px, y: hz.y + 3,
+              vx: (Math.random() - 0.5) * 0.45, vy: -0.7 - Math.random() * 0.9,
+              size: 2.3 + Math.random() * 2,
               color: "#76ff03",
-              life: 22 + Math.random() * 16, kind: "ring", glow: true
+              life: 24 + Math.random() * 16, kind: "ring", glow: true
             });
           }
         }
@@ -1399,8 +1520,7 @@
           vy: -0.6 - Math.random() * 0.9,
           size: 1.6 + Math.random() * 2,
           color: Math.random() < 0.5 ? "#ffd54f" : "#ff5722",
-          life: 16 + Math.random() * 14,
-          glow: true
+          life: 16 + Math.random() * 14, glow: true
         });
       }
 
@@ -1413,9 +1533,7 @@
           vy: -0.2 + Math.random() * 0.6,
           size: 1.6 + Math.random() * 1.8,
           color: Math.random() < 0.5 ? "#80d8ff" : "#e1f5fe",
-          life: 18 + Math.random() * 14,
-          gravity: 0.03,
-          glow: true
+          life: 18 + Math.random() * 14, gravity: 0.03, glow: true
         });
       }
     }
@@ -1442,7 +1560,7 @@
       for (const { p, v, type } of pairs) {
         const speed = Math.abs(p.vx);
         if (speed > 0.2 && p.grounded) {
-          v.walkPhase += 0.32 * dt;
+          v.walkPhase += 0.34 * dt;
           if (Math.random() < 0.16) spawnFootDust(p.x + PW / 2, p.y + PH, type, 1);
         } else {
           v.walkPhase *= Math.pow(0.85, dt);
@@ -1484,7 +1602,7 @@
     }
 
     // =========================================================================
-    // 7. OYUN EKRANI VE FİZİK SİMÜLASYONU
+    // 8. OYUN EKRANI VE FİZİK SİMÜLASYONU
     // =========================================================================
     function startGameScreen() {
       document.getElementById("lobby").style.display = "none";
@@ -1544,11 +1662,8 @@
     });
 
     document.getElementById("btnRestart").addEventListener("click", () => {
-      if (mode === "guest" && roomRef) {
-        roomRef.child("restartReq").set(Date.now());
-      } else {
-        loadLevel(state.levelIdx);
-      }
+      if (mode === "guest" && roomRef) roomRef.child("restartReq").set(Date.now());
+      else loadLevel(state.levelIdx);
     });
 
     document.getElementById("btnSwitch").addEventListener("click", () => {
@@ -1693,9 +1808,7 @@
 
       const allKeys = new Set([...Object.keys(prevActive), ...Object.keys(activeIds)]);
       for (const k of allKeys) {
-        if (!!prevActive[k] !== !!activeIds[k]) {
-          SoundFX.playDoor(!!activeIds[k]);
-        }
+        if (!!prevActive[k] !== !!activeIds[k]) SoundFX.playDoor(!!activeIds[k]);
       }
       state.activeIds = activeIds;
 
@@ -1712,18 +1825,20 @@
       updatePlayer(state.fire, fInput, solids, dt, true);
       updatePlayer(state.water, wInput, solids, dt, false);
 
-      const fHit = { x: state.fire.x + 3, y: state.fire.y + 4, w: PW - 6, h: PH - 4 };
-      const wHit = { x: state.water.x + 3, y: state.water.y + 4, w: PW - 6, h: PH - 4 };
+      // Çukur havuzlar zeminin (y) içine gömülü olduğundan ayak tabanı y + PH >= hz.y - 1 olunca temas algılanır
+      const fHit = { x: state.fire.x + 5, y: state.fire.y + 4, w: PW - 10, h: PH - 2 };
+      const wHit = { x: state.water.x + 5, y: state.water.y + 4, w: PW - 10, h: PH - 2 };
 
       for (const hz of lvl.hazards) {
-        if (rectsOverlap(fHit, hz) && (hz.type === "water" || hz.type === "acid")) {
+        const pitSensor = { x: hz.x + 4, y: hz.y - 2, w: hz.w - 8, h: hz.h };
+        if (rectsOverlap(fHit, pitSensor) && (hz.type === "water" || hz.type === "acid")) {
           spawnDeathBurst(state.fire.x, state.fire.y, "fire");
           SoundFX.playDeath();
           emitEvent("death_fire", "Ateş söndü! Bölüm yenileniyor...");
           loadLevel(state.levelIdx);
           return;
         }
-        if (rectsOverlap(wHit, hz) && (hz.type === "lava" || hz.type === "acid")) {
+        if (rectsOverlap(wHit, pitSensor) && (hz.type === "lava" || hz.type === "acid")) {
           spawnDeathBurst(state.water.x, state.water.y, "water");
           SoundFX.playDeath();
           emitEvent("death_water", "Su buharlaştı! Bölüm yenileniyor...");
@@ -1735,7 +1850,7 @@
       let gemChanged = false;
       lvl.gems.forEach((g, i) => {
         if (state.gemsCollected[i]) return;
-        const gBox = { x: g.x - 11, y: g.y - 11, w: 22, h: 22 };
+        const gBox = { x: g.x - 12, y: g.y - 12, w: 24, h: 24 };
         if (g.type === "fire" && rectsOverlap(fHit, gBox)) {
           state.gemsCollected[i] = true;
           spawnGemBurst(g);
@@ -1772,14 +1887,14 @@
     }
 
     // =========================================================================
-    // 8. CANVAS ÇİZİM FONKSİYONLARI
+    // 9. 3D DERİNLİKLİ CANVAS ÇİZİM FONKSİYONLARI
     // =========================================================================
     function drawTorch(t, idx) {
       const flick = Math.sin(animTick * 4.5 + idx * 1.9) * 2.2 + Math.cos(animTick * 8 + idx) * 1.1;
-      const radius = 84 + flick * 4;
+      const radius = 88 + flick * 4;
       const glow = ctx.createRadialGradient(t.x, t.y - 12, 4, t.x, t.y - 12, radius);
-      glow.addColorStop(0, "rgba(255, 167, 38, 0.34)");
-      glow.addColorStop(0.45, "rgba(255, 112, 67, 0.12)");
+      glow.addColorStop(0, "rgba(255, 167, 38, 0.36)");
+      glow.addColorStop(0.45, "rgba(255, 112, 67, 0.13)");
       glow.addColorStop(1, "rgba(255, 87, 34, 0)");
       ctx.fillStyle = glow;
       ctx.beginPath();
@@ -1824,18 +1939,38 @@
       ctx.fill();
     }
 
-    function drawStoneWall(w) {
+    function drawStoneWall3D(w) {
+      // Platform altı gölge
+      ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+      ctx.fillRect(w.x + 3, w.y + w.h, w.w - 3, 5);
+
+      // Ana taş gövde (3D ışık-gölge gradyanı)
       const grad = ctx.createLinearGradient(w.x, w.y, w.x, w.y + w.h);
-      grad.addColorStop(0, "#51485e");
-      grad.addColorStop(1, "#322b3b");
+      grad.addColorStop(0, "#635873");
+      grad.addColorStop(0.25, "#4c4359");
+      grad.addColorStop(1, "#2a2433");
       ctx.fillStyle = grad;
       ctx.fillRect(w.x, w.y, w.w, w.h);
 
-      ctx.strokeStyle = "rgba(15, 10, 20, 0.42)";
+      // 3D Üst Taş Tablası (Bevel)
+      if (w.h <= 45) {
+        const topGrad = ctx.createLinearGradient(w.x, w.y - 3, w.x, w.y + 4);
+        topGrad.addColorStop(0, "#857899");
+        topGrad.addColorStop(1, "#5d526e");
+        ctx.fillStyle = topGrad;
+        ctx.fillRect(w.x, w.y - 2, w.w, 5);
+
+        // Üst kenar parlak ışık çizgisi
+        ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+        ctx.fillRect(w.x + 1, w.y - 2, w.w - 2, 1.5);
+      }
+
+      // Taş blok derzleri
+      ctx.strokeStyle = "rgba(12, 9, 18, 0.45)";
       ctx.lineWidth = 1;
       for (let bx = w.x + 28; bx < w.x + w.w - 4; bx += 28) {
         ctx.beginPath();
-        ctx.moveTo(bx, w.y);
+        ctx.moveTo(bx, w.y + 3);
         ctx.lineTo(bx, w.y + w.h);
         ctx.stroke();
       }
@@ -1846,50 +1981,166 @@
         ctx.stroke();
       }
 
-      if (w.h <= 40) {
-        ctx.fillStyle = "#6c617d";
-        ctx.fillRect(w.x, w.y, w.w, 3);
-        ctx.fillStyle = "rgba(67, 117, 79, 0.55)";
-        for (let mx = w.x + 12; mx < w.x + w.w - 20; mx += 64) {
-          ctx.fillRect(mx, w.y, 18, 2.5);
+      // Doğal tapınak yosunu
+      if (w.h <= 45) {
+        ctx.fillStyle = "rgba(76, 145, 92, 0.65)";
+        for (let mx = w.x + 12; mx < w.x + w.w - 22; mx += 72) {
+          ctx.fillRect(mx, w.y - 2, 16, 3);
         }
       }
 
-      ctx.strokeStyle = "#221d29";
+      ctx.strokeStyle = "#1c1724";
       ctx.lineWidth = 1.5;
       ctx.strokeRect(w.x + 0.5, w.y + 0.5, w.w - 1, w.h - 1);
     }
 
-    function drawTempleDoor(d, type, isOccupied) {
-      const primary = type === "fire" ? "#ff5722" : "#29b6f6";
-      const glowCol = type === "fire" ? "rgba(255, 87, 34, 0.4)" : "rgba(41, 182, 246, 0.4)";
+    // GERÇEKÇİ ÇUKUR İÇİNDE LAV / SU / ASİT HAVUZLARI
+    function drawPitHazard(hz) {
+      let deepCol, midCol, topCol, glowCol, rimCol;
+      if (hz.type === "lava") {
+        deepCol = "#7f1d00";
+        midCol = "#e64a19";
+        topCol = "#ffd54f";
+        glowCol = "rgba(255, 87, 34, 0.34)";
+        rimCol = "#8d6e63";
+      } else if (hz.type === "water") {
+        deepCol = "#013a63";
+        midCol = "#0288d1";
+        topCol = "#b3e5fc";
+        glowCol = "rgba(41, 182, 246, 0.32)";
+        rimCol = "#78909c";
+      } else {
+        deepCol = "#1b5e20";
+        midCol = "#43a047";
+        topCol = "#ccff90";
+        glowCol = "rgba(118, 255, 3, 0.3)";
+        rimCol = "#689f38";
+      }
 
       ctx.save();
-      ctx.fillStyle = "#3d3547";
+
+      // 1. Çukurdan yukarı yükselen hacimsel ışık halesi
+      const aura = ctx.createLinearGradient(0, hz.y - 22, 0, hz.y + hz.h);
+      aura.addColorStop(0, "rgba(0,0,0,0)");
+      aura.addColorStop(1, glowCol);
+      ctx.fillStyle = aura;
+      ctx.fillRect(hz.x - 2, hz.y - 22, hz.w + 4, 24);
+
+      // 2. Platformun içine oyulmuş karanlık taş çukur yatağı (Trapez / Havuz Teknesi)
+      const inset = 5;
+      ctx.fillStyle = "#120e17";
+      ctx.beginPath();
+      ctx.moveTo(hz.x - 3, hz.y - 2);
+      ctx.lineTo(hz.x + hz.w + 3, hz.y - 2);
+      ctx.lineTo(hz.x + hz.w - inset, hz.y + hz.h + 2);
+      ctx.lineTo(hz.x + inset, hz.y + hz.h + 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. Çukurun içindeki sıvı (Üst yüzey taş seviyesinin 3px altında — gerçek çukur hissi)
+      const liqTop = hz.y + 3;
+      const liqBot = hz.y + hz.h;
+      const liqGrad = ctx.createLinearGradient(0, liqTop, 0, liqBot);
+      liqGrad.addColorStop(0, midCol);
+      liqGrad.addColorStop(1, deepCol);
+
+      ctx.fillStyle = liqGrad;
+      ctx.beginPath();
+      ctx.moveTo(hz.x + 2, liqBot);
+      ctx.lineTo(hz.x + 1, liqTop);
+      for (let x = 0; x <= hz.w - 2; x += 6) {
+        const wave = Math.sin(animTick * 2.8 + (hz.x + x) * 0.12) * 1.4;
+        ctx.lineTo(hz.x + 1 + x, liqTop + wave);
+      }
+      ctx.lineTo(hz.x + hz.w - 2, liqBot);
+      ctx.closePath();
+      ctx.fill();
+
+      // 4. Sıvının parlayan dalgalı yüzeyi
+      ctx.strokeStyle = topCol;
+      ctx.lineWidth = 2.2;
+      ctx.shadowColor = topCol;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      for (let x = 1; x <= hz.w - 1; x += 6) {
+        const wave = Math.sin(animTick * 2.8 + (hz.x + x) * 0.12) * 1.4;
+        if (x === 1) ctx.moveTo(hz.x + x, liqTop + wave);
+        else ctx.lineTo(hz.x + x, liqTop + wave);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // 5. Çukurun sol ve sağ 3D taş dudakları (Eğimli kenarlar)
+      ctx.fillStyle = "#5c506b";
+      // Sol dudak
+      ctx.beginPath();
+      ctx.moveTo(hz.x - 4, hz.y - 2);
+      ctx.lineTo(hz.x + 2, hz.y - 2);
+      ctx.lineTo(hz.x + inset, hz.y + hz.h + 2);
+      ctx.lineTo(hz.x - 2, hz.y + hz.h + 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Sağ dudak
+      ctx.beginPath();
+      ctx.moveTo(hz.x + hz.w - 2, hz.y - 2);
+      ctx.lineTo(hz.x + hz.w + 4, hz.y - 2);
+      ctx.lineTo(hz.x + hz.w + 2, hz.y + hz.h + 2);
+      ctx.lineTo(hz.x + hz.w - inset, hz.y + hz.h + 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Çukur alt taş taban çizgisi
+      ctx.strokeStyle = rimCol;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(hz.x + inset, hz.y + hz.h + 1);
+      ctx.lineTo(hz.x + hz.w - inset, hz.y + hz.h + 1);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawTempleDoor3D(d, type, isOccupied) {
+      const primary = type === "fire" ? "#ff5722" : "#29b6f6";
+      const darkRim = type === "fire" ? "#8c2408" : "#014773";
+      const glowCol = type === "fire" ? "rgba(255, 87, 34, 0.45)" : "rgba(41, 182, 246, 0.45)";
+
+      ctx.save();
+      // 3D Taş Kemer Gövdesi
+      ctx.fillStyle = "#2b2433";
+      ctx.beginPath();
+      ctx.roundRect(d.x - 6, d.y - 6, d.w + 12, d.h + 6, [20, 20, 2, 2]);
+      ctx.fill();
+
+      ctx.fillStyle = "#483e54";
       ctx.beginPath();
       ctx.roundRect(d.x - 4, d.y - 4, d.w + 8, d.h + 4, [18, 18, 2, 2]);
       ctx.fill();
-      ctx.strokeStyle = primary;
-      ctx.lineWidth = isOccupied ? 3 : 2;
+
+      ctx.strokeStyle = isOccupied ? "#fff" : primary;
+      ctx.lineWidth = isOccupied ? 2.8 : 2;
       ctx.stroke();
 
+      // İç derinlik boşluğu
       const innerGrad = ctx.createLinearGradient(d.x, d.y, d.x, d.y + d.h);
       if (isOccupied) {
         innerGrad.addColorStop(0, primary);
-        innerGrad.addColorStop(1, "#18131f");
+        innerGrad.addColorStop(1, darkRim);
       } else {
-        innerGrad.addColorStop(0, "#120f17");
-        innerGrad.addColorStop(1, "#1d1826");
+        innerGrad.addColorStop(0, "#0d0a12");
+        innerGrad.addColorStop(1, "#1c1626");
       }
       ctx.fillStyle = innerGrad;
       ctx.beginPath();
       ctx.roundRect(d.x + 2, d.y + 2, d.w - 4, d.h - 2, [14, 14, 0, 0]);
       ctx.fill();
 
+      // Element Rünü
       const cx = d.x + d.w / 2;
-      const cy = d.y + 26;
+      const cy = d.y + 27;
       ctx.shadowColor = primary;
-      ctx.shadowBlur = isOccupied ? 14 : 6;
+      ctx.shadowBlur = isOccupied ? 16 : 7;
       ctx.fillStyle = isOccupied ? "#fff" : primary;
       ctx.beginPath();
       if (type === "fire") {
@@ -1907,93 +2158,68 @@
       if (isOccupied) {
         ctx.fillStyle = glowCol;
         ctx.beginPath();
-        ctx.arc(cx, cy + 4, 28, 0, Math.PI * 2);
+        ctx.arc(cx, cy + 4, 30, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
     }
 
-    function drawHazard(hz) {
-      let baseCol, topCol, glowCol;
-      if (hz.type === "lava") {
-        baseCol = "#d84315"; topCol = "#ffca28"; glowCol = "rgba(255, 87, 34, 0.25)";
-      } else if (hz.type === "water") {
-        baseCol = "#0277bd"; topCol = "#80d8ff"; glowCol = "rgba(41, 182, 246, 0.25)";
-      } else {
-        baseCol = "#2e7d32"; topCol = "#b2ff59"; glowCol = "rgba(118, 255, 3, 0.22)";
-      }
-
-      const g = ctx.createLinearGradient(0, hz.y - 14, 0, hz.y + hz.h);
-      g.addColorStop(0, "rgba(0,0,0,0)");
-      g.addColorStop(1, glowCol);
-      ctx.fillStyle = g;
-      ctx.fillRect(hz.x, hz.y - 14, hz.w, 16);
-
-      ctx.fillStyle = baseCol;
-      ctx.beginPath();
-      ctx.moveTo(hz.x, hz.y + hz.h);
-      ctx.lineTo(hz.x, hz.y + 3);
-      for (let x = 0; x <= hz.w; x += 8) {
-        const wave = Math.sin(animTick * 2.5 + (hz.x + x) * 0.08) * 2;
-        ctx.lineTo(hz.x + x, hz.y + 2 + wave);
-      }
-      ctx.lineTo(hz.x + hz.w, hz.y + hz.h);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.strokeStyle = topCol;
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      for (let x = 0; x <= hz.w; x += 8) {
-        const wave = Math.sin(animTick * 2.5 + (hz.x + x) * 0.08) * 2;
-        if (x === 0) ctx.moveTo(hz.x + x, hz.y + 2 + wave);
-        else ctx.lineTo(hz.x + x, hz.y + 2 + wave);
-      }
-      ctx.stroke();
-    }
-
-    function drawGem(g, i) {
+    // 3B YÜZEYLİ KRİSTAL ELMAS
+    function drawGem3D(g, i) {
       const bob = Math.sin(animTick * 1.4 + i * 1.3) * 3.5;
       const gx = g.x;
       const gy = g.y + bob;
       const isFire = g.type === "fire";
-      const main = isFire ? "#ff3d00" : "#00b0ff";
-      const light = isFire ? "#ffab91" : "#b3e5fc";
+      const dark = isFire ? "#b71c1c" : "#01579b";
+      const mid = isFire ? "#ff5722" : "#039be5";
+      const bright = isFire ? "#ffcc80" : "#b3e5fc";
 
       ctx.save();
       ctx.translate(gx, gy);
 
-      const aura = ctx.createRadialGradient(0, 0, 2, 0, 0, 18);
-      aura.addColorStop(0, isFire ? "rgba(255, 87, 34, 0.45)" : "rgba(41, 182, 246, 0.45)");
+      // Arka 3D ışık halesi
+      const aura = ctx.createRadialGradient(0, 0, 2, 0, 0, 20);
+      aura.addColorStop(0, isFire ? "rgba(255, 87, 34, 0.5)" : "rgba(41, 182, 246, 0.5)");
       aura.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = aura;
       ctx.beginPath();
-      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = main;
+      // Sol koyu yüzey
+      ctx.fillStyle = dark;
       ctx.beginPath();
-      ctx.moveTo(0, -10);
-      ctx.lineTo(8, -2);
-      ctx.lineTo(0, 10);
-      ctx.lineTo(-8, -2);
+      ctx.moveTo(0, -11);
+      ctx.lineTo(-9, -2);
+      ctx.lineTo(0, 11);
       ctx.closePath();
       ctx.fill();
 
-      ctx.fillStyle = light;
+      // Sağ orta yüzey
+      ctx.fillStyle = mid;
       ctx.beginPath();
-      ctx.moveTo(0, -10);
-      ctx.lineTo(4, -2);
-      ctx.lineTo(0, 1);
-      ctx.lineTo(-4, -2);
+      ctx.moveTo(0, -11);
+      ctx.lineTo(9, -2);
+      ctx.lineTo(0, 11);
       ctx.closePath();
       ctx.fill();
 
+      // Ön parlak kristal faset
+      ctx.fillStyle = bright;
+      ctx.beginPath();
+      ctx.moveTo(0, -11);
+      ctx.lineTo(4.5, -2);
+      ctx.lineTo(0, 3);
+      ctx.lineTo(-4.5, -2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Parıltı yıldızı
       const glint = Math.max(0, Math.sin(animTick * 2.5 + i * 2));
       if (glint > 0.65) {
-        const s = (glint - 0.65) * 14;
+        const s = (glint - 0.65) * 15;
         ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(-s, -4); ctx.lineTo(s, -4);
         ctx.moveTo(0, -4 - s); ctx.lineTo(0, -4 + s);
@@ -2002,7 +2228,8 @@
       ctx.restore();
     }
 
-    function drawAnimatedCharacter(p, v, type) {
+    // 3D GÖLGELENDİRMELİ ANİMASYONLU KARAKTERLER
+    function drawCharacter3D(p, v, type) {
       const isFire = type === "fire";
       const cx = p.x + PW / 2;
       const bottomY = p.y + PH;
@@ -2012,12 +2239,21 @@
       const bodyBob = moving ? Math.abs(walkCos) * -2 : Math.sin(animTick * 1.6 + (isFire ? 0 : 2)) * 0.8;
       const lean = p.vx * 0.032;
 
-      const lightGrad = ctx.createRadialGradient(cx, p.y + 14, 4, cx, p.y + 14, 42);
-      lightGrad.addColorStop(0, isFire ? "rgba(255, 112, 67, 0.28)" : "rgba(41, 182, 246, 0.28)");
+      // Zemine düşen 3D temas gölgesi
+      if (p.grounded) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+        ctx.beginPath();
+        ctx.ellipse(cx, bottomY + 1, 11 * v.squashX, 3.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Karakter etrafında 3B hacimsel element ışığı
+      const lightGrad = ctx.createRadialGradient(cx, p.y + 14, 4, cx, p.y + 14, 46);
+      lightGrad.addColorStop(0, isFire ? "rgba(255, 112, 67, 0.34)" : "rgba(41, 182, 246, 0.34)");
       lightGrad.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = lightGrad;
       ctx.beginPath();
-      ctx.arc(cx, p.y + 14, 42, 0, Math.PI * 2);
+      ctx.arc(cx, p.y + 14, 46, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.save();
@@ -2025,16 +2261,17 @@
       ctx.scale(v.squashX, v.squashY);
       ctx.rotate(lean);
 
-      const darkCol = isFire ? "#c62828" : "#01579b";
+      const darkCol = isFire ? "#b71c1c" : "#01579b";
       const bodyCol = isFire ? "#ff5722" : "#039be5";
-      const brightCol = isFire ? "#ffca28" : "#80d8ff";
+      const brightCol = isFire ? "#ffd54f" : "#b3e5fc";
 
-      const legSwing = moving ? walkSin * 5.5 : (!p.grounded ? (p.vy < 0 ? 3 : -2) : 0);
-      const leftLift = moving ? Math.max(0, -walkCos * 3.5) : 0;
-      const rightLift = moving ? Math.max(0, walkCos * 3.5) : 0;
+      // Bacaklar
+      const legSwing = moving ? walkSin * 5.8 : (!p.grounded ? (p.vy < 0 ? 3.2 : -2) : 0);
+      const leftLift = moving ? Math.max(0, -walkCos * 3.8) : 0;
+      const rightLift = moving ? Math.max(0, walkCos * 3.8) : 0;
 
       ctx.lineCap = "round";
-      ctx.lineWidth = 4.5;
+      ctx.lineWidth = 4.6;
 
       ctx.strokeStyle = darkCol;
       ctx.beginPath();
@@ -2048,13 +2285,19 @@
       ctx.lineTo(3 + legSwing, -2 - rightLift);
       ctx.stroke();
 
-      ctx.fillStyle = bodyCol;
+      // 3B Küresel Gölgeli Gövde
+      const torsoGrad = ctx.createRadialGradient(-3, -18 + bodyBob, 2, 0, -15 + bodyBob, 12);
+      torsoGrad.addColorStop(0, brightCol);
+      torsoGrad.addColorStop(0.45, bodyCol);
+      torsoGrad.addColorStop(1, darkCol);
+      ctx.fillStyle = torsoGrad;
       ctx.beginPath();
       ctx.roundRect(-8, -22 + bodyBob, 16, 13, 6);
       ctx.fill();
 
+      // Kollar
       ctx.strokeStyle = bodyCol;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.2;
       const armSwing = moving ? -walkSin * 4.5 : 0;
       ctx.beginPath();
       ctx.moveTo(-7, -18 + bodyBob);
@@ -2063,19 +2306,20 @@
       ctx.lineTo(10 - armSwing, -12 + bodyBob);
       ctx.stroke();
 
+      // Saç (Alev / Su Dalgası)
       const headY = -24 + bodyBob;
       const trail = Math.max(-7, Math.min(7, v.trailX));
 
       if (isFire) {
         const f1 = Math.sin(animTick * 5.5) * 2.5;
         const f2 = Math.cos(animTick * 7) * 2;
-        ctx.fillStyle = "#ff3d00";
+        ctx.fillStyle = "#e64a19";
         ctx.beginPath();
         ctx.moveTo(-9, headY + 2);
-        ctx.quadraticCurveTo(-11 + trail * 0.4, headY - 8, -4 + trail * 0.6, headY - 14 + f1);
+        ctx.quadraticCurveTo(-11 + trail * 0.4, headY - 8, -4 + trail * 0.6, headY - 15 + f1);
         ctx.lineTo(-1 + trail * 0.3, headY - 9);
-        ctx.quadraticCurveTo(2 + trail * 0.8, headY - 18 + f2, 4 + trail * 0.6, headY - 11);
-        ctx.quadraticCurveTo(10 + trail * 0.5, headY - 13 - f1, 9, headY + 2);
+        ctx.quadraticCurveTo(2 + trail * 0.8, headY - 19 + f2, 4 + trail * 0.6, headY - 11);
+        ctx.quadraticCurveTo(10 + trail * 0.5, headY - 14 - f1, 9, headY + 2);
         ctx.closePath();
         ctx.fill();
 
@@ -2087,10 +2331,10 @@
         ctx.fill();
       } else {
         const wave = Math.sin(animTick * 4) * 2.2;
-        ctx.fillStyle = "#0288d1";
+        ctx.fillStyle = "#0277bd";
         ctx.beginPath();
         ctx.moveTo(-9, headY + 2);
-        ctx.quadraticCurveTo(-9, headY - 9, 0 + trail * 0.6, headY - 15 + wave * 0.5);
+        ctx.quadraticCurveTo(-9, headY - 9, 0 + trail * 0.6, headY - 16 + wave * 0.5);
         ctx.quadraticCurveTo(9, headY - 9, 9, headY + 2);
         ctx.closePath();
         ctx.fill();
@@ -2102,7 +2346,7 @@
         ctx.quadraticCurveTo(
           tailDir * 12 + trail * 0.7,
           headY - 7 + wave,
-          tailDir * 13 + trail,
+          tailDir * 14 + trail,
           headY + 1 + wave
         );
         ctx.quadraticCurveTo(tailDir * 8, headY + 2, tailDir * 3, headY);
@@ -2110,16 +2354,17 @@
         ctx.fill();
       }
 
-      ctx.fillStyle = bodyCol;
+      // 3B Küresel Gölgeli Kafa
+      const headGrad = ctx.createRadialGradient(-2.5, headY - 3, 1.5, 0, headY, 10);
+      headGrad.addColorStop(0, brightCol);
+      headGrad.addColorStop(0.5, bodyCol);
+      headGrad.addColorStop(1, darkCol);
+      ctx.fillStyle = headGrad;
       ctx.beginPath();
-      ctx.arc(0, headY, 8.5, 0, Math.PI * 2);
+      ctx.arc(0, headY, 8.8, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.fillStyle = isFire ? "rgba(255, 224, 130, 0.35)" : "rgba(179, 229, 252, 0.35)";
-      ctx.beginPath();
-      ctx.arc(p.dir * 1.5, headY - 1, 6, 0, Math.PI * 2);
-      ctx.fill();
-
+      // Gözler
       const eyeShift = p.dir * 2.6;
       const isBlinking = v.blink > 4.35;
 
@@ -2181,24 +2426,31 @@
 
       const fHit = { x: state.fire.x + 3, y: state.fire.y + 4, w: PW - 6, h: PH - 4 };
       const wHit = { x: state.water.x + 3, y: state.water.y + 4, w: PW - 6, h: PH - 4 };
-      drawTempleDoor(lvl.doors.fire, "fire", rectsOverlap(fHit, lvl.doors.fire));
-      drawTempleDoor(lvl.doors.water, "water", rectsOverlap(wHit, lvl.doors.water));
+      drawTempleDoor3D(lvl.doors.fire, "fire", rectsOverlap(fHit, lvl.doors.fire));
+      drawTempleDoor3D(lvl.doors.water, "water", rectsOverlap(wHit, lvl.doors.water));
 
-      for (const w of lvl.walls) drawStoneWall(w);
+      // Önce taş duvarlar çizilir, ardından çukur havuzlar taşın içine oyulmuş gibi üstüne oturur
+      for (const w of lvl.walls) drawStoneWall3D(w);
+      for (const hz of lvl.hazards) drawPitHazard(hz);
 
+      // 3D Mekanik Kapılar ve Enerji Köprüleri
       for (const g of lvl.gates) {
         const active = !!(state.activeIds && state.activeIds[g.id]);
         ctx.save();
         if (g.kind === "gate") {
           if (!active) {
-            ctx.fillStyle = "#3c3445";
+            const gGrad = ctx.createLinearGradient(g.x, g.y, g.x + g.w, g.y);
+            gGrad.addColorStop(0, "#5c506b");
+            gGrad.addColorStop(0.5, "#3a3145");
+            gGrad.addColorStop(1, "#221c29");
+            ctx.fillStyle = gGrad;
             ctx.fillRect(g.x, g.y, g.w, g.h);
             ctx.strokeStyle = g.color;
             ctx.lineWidth = 2;
             ctx.strokeRect(g.x + 1, g.y + 1, g.w - 2, g.h - 2);
             ctx.fillStyle = g.color;
             ctx.shadowColor = g.color;
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 9;
             ctx.fillRect(g.x + g.w / 2 - 2, g.y + 8, 4, g.h - 16);
           } else {
             ctx.strokeStyle = g.color;
@@ -2210,12 +2462,12 @@
         } else if (g.kind === "bridge") {
           if (active) {
             ctx.shadowColor = g.color;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 12;
             ctx.fillStyle = g.color;
             ctx.beginPath();
-            ctx.roundRect(g.x, g.y, g.w, g.h, 4);
+            ctx.roundRect(g.x, g.y, g.w, g.h, 5);
             ctx.fill();
-            ctx.fillStyle = "rgba(255,255,255,0.45)";
+            ctx.fillStyle = "rgba(255,255,255,0.55)";
             ctx.fillRect(g.x + 4, g.y + 2, g.w - 8, 3);
           } else {
             ctx.strokeStyle = g.color;
@@ -2228,37 +2480,38 @@
         ctx.restore();
       }
 
+      // 3D Zemin Butonları
       for (const b of lvl.buttons) {
         const pressed = !!(state.activeIds && state.activeIds[b.targetId]);
-        ctx.fillStyle = "#2b2533";
-        ctx.fillRect(b.x - 3, b.y + 4, b.w + 6, 4);
+        ctx.fillStyle = "#241f2b";
+        ctx.fillRect(b.x - 4, b.y + 4, b.w + 8, 4);
 
         ctx.save();
         ctx.fillStyle = b.color;
         if (pressed) {
           ctx.shadowColor = b.color;
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 12;
         }
         const offset = pressed ? 4 : 0;
         ctx.beginPath();
         ctx.roundRect(b.x, b.y + offset, b.w, b.h - offset, [4, 4, 0, 0]);
         ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.fillRect(b.x + 3, b.y + offset + 1, b.w - 6, 2);
         ctx.restore();
       }
 
-      for (const hz of lvl.hazards) drawHazard(hz);
-
       lvl.gems.forEach((g, i) => {
-        if (!(state.gemsCollected && state.gemsCollected[i])) drawGem(g, i);
+        if (!(state.gemsCollected && state.gemsCollected[i])) drawGem3D(g, i);
       });
 
-      drawAnimatedCharacter(state.fire, visualState.fire, "fire");
-      drawAnimatedCharacter(state.water, visualState.water, "water");
+      drawCharacter3D(state.fire, visualState.fire, "fire");
+      drawCharacter3D(state.water, visualState.water, "water");
       drawParticles();
     }
 
     // =========================================================================
-    // 9. ANA OYUN DÖNGÜSÜ
+    // 10. ANA OYUN DÖNGÜSÜ
     // =========================================================================
     function loop(now) {
       const dtMs = now - lastTime;
